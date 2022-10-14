@@ -19,5 +19,5 @@
     "lib": ["es2019", "dom"],
     "resolveJsonModule": true,
   },
-  "exclude": ["node_modules", "**/*.json", "dist", "examples", "__coverage__"]
+  "exclude": ["node_modules", "**/*.json", "dist", "examples", "__coverage__", "webpack.config.js"]
 }

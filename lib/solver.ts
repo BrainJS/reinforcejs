@@ -18,7 +18,7 @@ export class Solver {
     for (const k in model) {
       if (model.hasOwnProperty(k)) {
         const m = model[k]; // mat ref
-        if(!(k in this.step_cache)) { this.step_cache[k] = new Mat(m.n, m.d); }
+        if (!(k in this.step_cache)) { this.step_cache[k] = new Mat(m.n, m.d); }
         const s = this.step_cache[k];
         for(let i = 0, n = m.w.length; i < n; i++) {
 
@@ -27,11 +27,11 @@ export class Solver {
           s.w[i] = s.w[i] * this.decay_rate + (1.0 - this.decay_rate) * mdwi * mdwi;
 
           // gradient clip
-          if(mdwi > clipval) {
+          if (mdwi > clipval) {
             mdwi = clipval;
             num_clipped++;
           }
-          if(mdwi < -clipval) {
+          if (mdwi < -clipval) {
             mdwi = -clipval;
             num_clipped++;
           }

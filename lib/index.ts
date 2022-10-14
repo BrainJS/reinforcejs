@@ -14,5 +14,4 @@ export { Net, INetJSON } from "./net";
 export { RandMat } from "./rand-mat";
 export { Solver } from "./solver";
 export { Tuple } from "./tuple";
-export { sig, fillRand, fillRandn, randn, gaussRandom, randf, randi, maxi, samplei, sampleWeighted, setConst, assert } from "./utilities"
-export { zeros } from "./zeros";
+export { randn, gaussRandom, randf, randi, samplei, sampleWeighted, setConst, assert } from "./utilities"

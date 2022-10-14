@@ -132,8 +132,8 @@ export abstract class RecurrentReinforceAgent {
         for (let i = 0; i < this.maxNumActions; i++) {
           // [the action delta] * [the desirebility]
           let update = - (V - b) * (this.actorActions[t].w[i] - this.actorOutputs[t].w[i]);
-          if(update > 0.1) { update = 0.1; }
-          if(update < -0.1) { update = -0.1; }
+          if (update > 0.1) { update = 0.1; }
+          if (update < -0.1) { update = -0.1; }
           this.actorOutputs[t].dw[i] += update;
         }
         let update = - (V - b);

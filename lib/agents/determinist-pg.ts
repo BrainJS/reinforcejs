@@ -83,10 +83,10 @@ export abstract class DeterministPG {
       a.w[1] = randn(0, gaussVar);
     }
     let clamp = 0.25;
-    if(a.w[0] > clamp) a.w[0] = clamp;
-    if(a.w[0] < -clamp) a.w[0] = -clamp;
-    if(a.w[1] > clamp) a.w[1] = clamp;
-    if(a.w[1] < -clamp) a.w[1] = -clamp;
+    if (a.w[0] > clamp) a.w[0] = clamp;
+    if (a.w[0] < -clamp) a.w[0] = -clamp;
+    if (a.w[1] > clamp) a.w[1] = clamp;
+    if (a.w[1] < -clamp) a.w[1] = -clamp;
 
     // shift state memory
     this.s0 = this.s1;
@@ -113,7 +113,7 @@ export abstract class DeterministPG {
   learn(r1: number): void {
     // perform an update on Q function
     //this.rewardHistory.push(r1);
-    if(this.r0 !== null) {
+    if (this.r0 !== null) {
       const Gtmp = new Graph(false);
       // dpg update:
       // first compute the features psi:
@@ -129,8 +129,8 @@ export abstract class DeterministPG {
       const qw1 = Gtmp.mul(this.criticw, psi_sa1); // 1x1
       // get the td error finally
       let tderror = this.r0 + this.gamma * qw1.w[0] - qw0.w[0]; // lol
-      if(tderror > 0.5) tderror = 0.5; // clamp
-      if(tderror < -0.5) tderror = -0.5;
+      if (tderror > 0.5) tderror = 0.5; // clamp
+      if (tderror < -0.5) tderror = -0.5;
       this.tderror = tderror;
 
       // This was converted to use method updateNaturalGradient below
@@ -139,7 +139,7 @@ export abstract class DeterministPG {
       // let ix = 0;
       // for(const p in net) {
       //   const mat = net[p];
-      //   if(net.hasOwnProperty(p)){
+      //   if (net.hasOwnProperty(p)){
       //     for(let i = 0, n = mat.w.length; i < n; i++) {
       //       mat.w[i] += this.alpha * this.criticw.w[ix]; // natural gradient update
       //       ix+=1;

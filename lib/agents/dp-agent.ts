@@ -1,4 +1,3 @@
-import { zeros } from "../zeros";
 import { sampleWeighted } from "../utilities";
 
 export interface IDPAgentOptions {
@@ -12,21 +11,19 @@ export interface IDPAgentOptions {
 // - does not learn from experience :(
 // - assumes finite MDP :(
 export abstract class DPAgent {
-  V: number[] | Float64Array = [];
-  P: number[] | Float64Array = [];
+  V: Float64Array;
+  P: Float64Array;
   gamma: number;
   numStates: number;
   maxNumActions: number;
 
   constructor(opt: IDPAgentOptions) {
-    this.V = []; // state value function
-    this.P = []; // policy distribution \pi(s,a)
     this.gamma = opt.gamma ?? 0.75; // future reward discount factor
     // reset the agent's policy and value function
     this.numStates = opt.numStates;
     this.maxNumActions = opt.maxNumActions;
-    this.V = zeros(this.numStates);
-    this.P = zeros(this.numStates * this.maxNumActions);
+    this.V = new Float64Array(this.numStates); // state value function
+    this.P = new Float64Array(this.numStates * this.maxNumActions); // policy distribution \pi(s,a)
     // initialize uniform random policy
     for(let s = 0; s < this.numStates; s++) {
       const poss = this.allowedActions(s);
@@ -61,7 +58,7 @@ export abstract class DPAgent {
 
   evaluatePolicy(): void {
     // perform a synchronous update of the value function
-    const Vnew = zeros(this.numStates);
+    const Vnew = new Float64Array(this.numStates);
     for (let s = 0; s < this.numStates; s++) {
       // integrate over actions in a stochastic policy
       // note that we assume that policy probability mass over allowed actions sums to one
@@ -94,10 +91,10 @@ export abstract class DPAgent {
         const rs = this.reward(s,a,ns);
         const v = rs + this.gamma * this.V[ns];
         vs.push(v);
-        if(i === 0 || v > vmax) {
+        if (i === 0 || v > vmax) {
           vmax = v;
           nmax = 1;
-        } else if(v === vmax) {
+        } else if (v === vmax) {
           nmax += 1;
         }
       }

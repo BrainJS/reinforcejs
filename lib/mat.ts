@@ -1,6 +1,5 @@
 // Mat holds a matrix
-import { zeros } from "./zeros";
-import { assert } from "./utilities";
+import {assert, randf, randn} from "./utilities";
 
 export interface IMatJson {
   n: number;
@@ -11,14 +10,14 @@ export interface IMatJson {
 export class Mat {
   n: number;
   d: number;
-  w: Float64Array | number[];
-  dw: Float64Array | number[];
+  w: Float64Array;
+  dw: Float64Array;
   constructor(n: number, d: number) {
     // n is number of rows d is number of columns
     this.n = n;
     this.d = d;
-    this.w = zeros(n * d);
-    this.dw = zeros(n * d);
+    this.w = new Float64Array(n * d);
+    this.dw = new Float64Array(n * d);
   }
   get(row: number, col: number): number {
     // slow but careful accessor function
@@ -29,7 +28,7 @@ export class Mat {
   }
   set(row: number, col: number, v: number): void {
     // slow but careful accessor function
-    var ix = (this.d * row) + col;
+    let ix = (this.d * row) + col;
     assert(ix >= 0 && ix < this.w.length);
     this.w[ix] = v;
   }
@@ -53,8 +52,8 @@ export class Mat {
   fromJSON(json: IMatJson): this {
     this.n = json.n;
     this.d = json.d;
-    this.w = zeros(this.n * this.d);
-    this.dw = zeros(this.n * this.d);
+    this.w = new Float64Array(this.n * this.d);
+    this.dw = new Float64Array(this.n * this.d);
     for(let i = 0, n = this.n * this.d; i < n; i++) {
       this.w[i] = json.w[i]; // copy over weights
     }
@@ -85,6 +84,30 @@ export class Mat {
     for(let i = 0, n = this.dw.length; i < n; i++) {
       this.dw[i] = c;
     }
+  }
+  fillRandn(mu: number, std: number): void {
+    for(let i = 0, n = this.w.length; i < n; i++) {
+      this.w[i] = randn(mu, std);
+    }
+  }
+  fillRand(lo: number, hi: number) {
+    for(let i = 0, n = this.w.length; i < n; i++) {
+      this.w[i] = randf(lo, hi);
+    }
+  }
+  maxi(): number {
+    // argmax of this.w
+    const w = this.w;
+    let maxv = w[0];
+    let maxix = 0;
+    for(let i = 1, n = w.length; i < n; i++) {
+      const v = w[i];
+      if (v > maxv) {
+        maxix = i;
+        maxv = v;
+      }
+    }
+    return maxix;
   }
   static fromJSON(json: IMatJson): Mat {
     const mat = new Mat(1, 1);

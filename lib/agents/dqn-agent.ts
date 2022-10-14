@@ -1,4 +1,4 @@
-import { randi, maxi } from "../utilities";
+import { randi } from "../utilities";
 import { Mat } from "../mat";
 import { Tuple } from "../tuple";
 import { Graph } from "../graph";
@@ -118,7 +118,7 @@ export class DQNAgent {
     } else {
       // greedy wrt Q function
       const amat = this.forwardQ(s, false);
-      a = maxi(amat.w); // returns index of argmax action
+      a = amat.maxi(); // returns index of argmax action
     }
 
     // shift state memory
@@ -162,7 +162,7 @@ export class DQNAgent {
 
     // compute the target Q value
     const tmat = this.forwardQ(s1, false);
-    const i = maxi(tmat.w);
+    const i = tmat.maxi();
     const qmax = r0 + this.gamma * tmat.w[i];
 
     // now predict
@@ -171,8 +171,8 @@ export class DQNAgent {
     let tderror = pred.w[a0] - qmax;
     const clamp = this.tderrorClamp;
     if (Math.abs(tderror) > clamp) {  // huber loss to robustify
-      if(tderror > clamp) tderror = clamp;
-      if(tderror < -clamp) tderror = -clamp;
+      if (tderror > clamp) tderror = clamp;
+      if (tderror < -clamp) tderror = -clamp;
     }
     pred.dw[a0] = tderror;
     (this.lastG as Graph).backward(); // compute gradients on net params

@@ -1,2 +1,0 @@
-// Gridworld
-export class GridWorldTD {}
