@@ -23,7 +23,7 @@ const web = {
     extensions: ['.ts'],
   },
   output: {
-    filename: 'rs-browser.js',
+    filename: 'rl-browser.js',
     path: path.resolve(__dirname, 'dist'),
     libraryTarget: 'umd',
   },
@@ -33,7 +33,7 @@ const node = {
   ...web,
   target: 'node',
   output: {
-    filename: 'rs.js',
+    filename: 'rl.js',
     path: path.resolve(__dirname, 'dist'),
     libraryTarget: 'umd',
   }

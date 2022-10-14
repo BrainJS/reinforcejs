@@ -1,4 +1,4 @@
-# REINFORCEjs
+# @brainjs/rl
 
 **NOTE: A typescript fork of the reinforce.js library from https://github.com/karpathy/reinforcejs.
 An effort to keep the library current and usable in the modern world.
