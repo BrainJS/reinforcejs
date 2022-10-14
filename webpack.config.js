@@ -23,7 +23,7 @@ const web = {
     extensions: ['.ts'],
   },
   output: {
-    filename: 'reinforce-browser.js',
+    filename: 'rs-browser.js',
     path: path.resolve(__dirname, 'dist'),
     libraryTarget: 'umd',
   },
@@ -33,7 +33,7 @@ const node = {
   ...web,
   target: 'node',
   output: {
-    filename: 'reinforce.js',
+    filename: 'rs.js',
     path: path.resolve(__dirname, 'dist'),
     libraryTarget: 'umd',
   }
