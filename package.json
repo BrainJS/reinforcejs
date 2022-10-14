@@ -8,7 +8,8 @@
   "scripts": {
     "build": "rimraf dist; webpack --config webpack.config.js; tsc --declaration --emitDeclarationOnly --declarationMap",
     "test": "jest",
-    "patch": "npm version patch"
+    "patch": "npm version patch",
+    "prepublish": "yarb build"
   },
   "devDependencies": {
     "@types/jest": "^29.1.2",
