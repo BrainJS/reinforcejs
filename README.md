@@ -4,7 +4,7 @@
 An effort to keep the library current and usable in the modern world.
 Thank you [Andrej karpathy](https://github.com/karpathy) (original author) for your fine work.**
 
-**@brainjs/rs** is a Reinforcement Learning library that implements several common RL algorithms, all with web demos. In particular, the library currently includes:
+**@brainjs/rl** is a Reinforcement Learning library that implements several common RL algorithms, all with web demos. In particular, the library currently includes:
 
 - **Dynamic Programming** methods
 - (Tabular) **Temporal Difference Learning** (SARSA/Q-Learning)
