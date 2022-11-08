@@ -1,7 +1,7 @@
 import { Mat } from "../mat";
 import { RandMat } from "../rand-mat";
 import { Graph } from "../graph";
-import { randn } from "../utilities";
+import {activation, randn} from "../utilities";
 import { Net } from "../net";
 
 export interface IDeterministPGOptions {
@@ -9,8 +9,10 @@ export interface IDeterministPGOptions {
   epsilon?: number;
   alpha?: number;
   beta?: number;
-  numStates: number;
-  maxNumActions: number;
+  inputSize: number;
+  outputSize: number;
+  hiddenLayers?: number[];
+  activation: activation;
 }
 // Currently buggy implementation, doesnt work
 export abstract class DeterministPG {
@@ -18,9 +20,9 @@ export abstract class DeterministPG {
   epsilon: number;
   alpha: number;
   beta: number;
-  numStates: number;
-  maxNumActions: number;
-  nh: number;
+  inputSize: number;
+  outputSize: number;
+  hiddenLayers: number[];
   actorNet: Net;
   ntheta: number;
   criticw: Mat;
@@ -32,18 +34,21 @@ export abstract class DeterministPG {
   a1: null | Mat;
   t: number;
 
+  activation: activation;
+
   constructor(opt: IDeterministPGOptions) {
     this.gamma = opt.gamma ?? 0.5; // future reward discount factor
     this.epsilon = opt.epsilon ?? 0.5; // for epsilon-greedy policy
     this.alpha = opt.alpha ?? 0.001; // actor net learning rate
     this.beta = opt.beta ?? 0.01; // baseline net learning rate
-    this.numStates = opt.numStates;
-    this.maxNumActions = opt.maxNumActions;
-    this.nh = 100; // number of hidden units
+    this.hiddenLayers = opt.hiddenLayers ?? [100]; // number of hidden units
+    this.inputSize = opt.inputSize;
+    this.outputSize = opt.outputSize;
+    this.activation = opt.activation ?? "tanh";
 
     // actor
-    this.actorNet = new Net(this.nh, this.numStates, this.maxNumActions);
-    this.ntheta = this.maxNumActions * this.numStates + this.maxNumActions; // number of params in actor
+    this.actorNet = new Net(this.inputSize, this.hiddenLayers, this.outputSize);
+    this.ntheta = this.outputSize * this.inputSize + this.outputSize; // number of params in actor
 
     // critic
     this.criticw = new RandMat(1, this.ntheta, 0, 0.01); // row vector
@@ -56,18 +61,18 @@ export abstract class DeterministPG {
     this.t = 0;
   }
 
-  forwardActor(s: null | Mat, needs_backprop: boolean) {
+  forwardActor(s: null | Mat, needsBackprop: boolean) {
     const net = this.actorNet;
-    const G = new Graph(needs_backprop);
-    const a1mat = G.add(G.mul(net.W1, s as Mat), net.b1);
-    const h1mat = G.tanh(a1mat);
-    const a2mat = G.add(G.mul(net.W2, h1mat), net.b2);
+    const G = new Graph(needsBackprop);
+    const a1mat = G.add(G.mul(net.weights[0], s as Mat), net.biases[0]);
+    const h1mat = G[this.activation](a1mat);
+    const a2mat = G.add(G.mul(net.weights[1], h1mat), net.biases[1]);
     return { a: a2mat, G };
   }
 
   act(slist: number[] | Float64Array): Mat {
     // convert to a Mat column vector
-    const s = new Mat(this.numStates, 1);
+    const s = new Mat(this.inputSize, 1);
     s.setFrom(slist);
 
     // forward the actor to get action output
@@ -98,8 +103,8 @@ export abstract class DeterministPG {
   }
 
   utilJacobianAt(s: null | Mat): Mat {
-    const ujacobian = new Mat(this.ntheta, this.maxNumActions);
-    for (let a = 0; a < this.maxNumActions; a++) {
+    const ujacobian = new Mat(this.ntheta, this.outputSize);
+    for (let a = 0; a < this.outputSize; a++) {
       this.actorNet.zeroGrads();
       const ag = this.forwardActor(this.s0, true);
       ag.a.dw[a] = 1.0;
@@ -120,13 +125,13 @@ export abstract class DeterministPG {
       // the jacobian matrix of the actor for s
       const ujacobian0 = this.utilJacobianAt(this.s0);
       // now form the features \psi(s,a)
-      const psi_sa0 = Gtmp.mul(ujacobian0, this.a0 as Mat); // should be [this.ntheta x 1] "feature" vector
-      const qw0 = Gtmp.mul(this.criticw, psi_sa0); // 1x1
+      const psiAa0 = Gtmp.mul(ujacobian0, this.a0 as Mat); // should be [this.ntheta x 1] "feature" vector
+      const qw0 = Gtmp.mul(this.criticw, psiAa0); // 1x1
       // now do the same thing because we need \psi(s_{t+1}, \mu\_\theta(s\_t{t+1}))
       const ujacobian1 = this.utilJacobianAt(this.s1);
       const ag = this.forwardActor(this.s1, false);
-      const psi_sa1 = Gtmp.mul(ujacobian1, ag.a);
-      const qw1 = Gtmp.mul(this.criticw, psi_sa1); // 1x1
+      const psiAa1 = Gtmp.mul(ujacobian1, ag.a);
+      const qw1 = Gtmp.mul(this.criticw, psiAa1); // 1x1
       // get the td error finally
       let tderror = this.r0 + this.gamma * qw1.w[0] - qw0.w[0]; // lol
       if (tderror > 0.5) tderror = 0.5; // clamp
@@ -149,15 +154,15 @@ export abstract class DeterministPG {
 
       // This is the conversion to use method updateNaturalGradient below
       const net = this.actorNet;
-      let ix = this.updateNaturalGradient(net.W1);
-      ix = this.updateNaturalGradient(net.b1, ix);
-      ix = this.updateNaturalGradient(net.W2, ix);
-      ix = this.updateNaturalGradient(net.b2, ix);
+      let ix = this.updateNaturalGradient(net.weights[0]);
+      ix = this.updateNaturalGradient(net.biases[0], ix);
+      ix = this.updateNaturalGradient(net.weights[1], ix);
+      ix = this.updateNaturalGradient(net.biases[1], ix);
       // end of conversion
 
       // update the critic parameters too
-      for(let i = 0; i < this.ntheta; i++) {
-        const update = this.beta * tderror * psi_sa0.w[i];
+      for (let i = 0; i < this.ntheta; i++) {
+        const update = this.beta * tderror * psiAa0.w[i];
         this.criticw.w[i] += update;
       }
     }
@@ -165,7 +170,7 @@ export abstract class DeterministPG {
   }
 
   updateNaturalGradient(mat: Mat, ix: number = 0): number {
-    for(let i = 0, n = mat.w.length; i < n; i++) {
+    for (let i = 0, n = mat.w.length; i < n; i++) {
       mat.w[i] += this.alpha * this.criticw.w[ix]; // natural gradient update
       ix += 1;
     }

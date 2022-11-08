@@ -1,3 +1,5 @@
+export type activation = 'relu' | 'tanh' | 'sigmoid';
+
 export function assert(condition: boolean, message = "Assertion failed") {
   // from http://stackoverflow.com/questions/15313418/javascript-assert
   if (!condition) {
@@ -44,7 +46,7 @@ export const samplei = function(w: number[]): number {
 }
 
 export const setConst = function<T>(arr: number[] | Float64Array, c: number): void {
-  for(let i = 0, n = arr.length; i < n; i++) {
+  for (let i = 0, n = arr.length; i < n; i++) {
     arr[i] = c;
   }
 }
@@ -52,7 +54,7 @@ export const setConst = function<T>(arr: number[] | Float64Array, c: number): vo
 export const sampleWeighted = function(p: number[]): number {
   const r = Math.random();
   let c = 0.0;
-  for(let i = 0, n = p.length; i < n; i++) {
+  for (let i = 0, n = p.length; i < n; i++) {
     c += p[i];
     if (c >= r) {
       return i;

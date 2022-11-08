@@ -1,7 +1,7 @@
 // Mat holds a matrix
 import {assert, randf, randn} from "./utilities";
 
-export interface IMatJson {
+export interface IMatJSON {
   n: number;
   d: number;
   w: number[] | { [key: number]: number };
@@ -13,6 +13,16 @@ export class Mat {
   w: Float64Array;
   dw: Float64Array;
   constructor(n: number, d: number) {
+    if (typeof n === "undefined") {
+      debugger;
+      console.error("n is undefined");
+      throw new Error("n is undefined");
+    }
+    if (typeof d === "undefined") {
+      debugger;
+      console.error("d is undefined");
+      throw new Error("d is undefined");
+    }
     // n is number of rows d is number of columns
     this.n = n;
     this.d = d;
@@ -33,28 +43,28 @@ export class Mat {
     this.w[ix] = v;
   }
   setFrom(arr: number[] | Float64Array): void {
-    for(let i=0,n=arr.length;i<n;i++) {
+    for (let i = 0, n = arr.length; i < n; i++) {
       this.w[i] = arr[i];
     }
   }
   setColumn(m: this, i: number): void {
-    for(let q=0,n=m.w.length;q<n;q++) {
-      this.w[(this.d * q) + i] = m.w[q];
+    for (let i = 0, n = m.w.length; i < n; i++) {
+      this.w[(this.d * i) + i] = m.w[i];
     }
   }
-  toJSON(): IMatJson {
+  toJSON(): IMatJSON {
     return {
       n: this.n,
       d: this.d,
       w: Array.from(this.w),
     };
   }
-  fromJSON(json: IMatJson): this {
+  fromJSON(json: IMatJSON): this {
     this.n = json.n;
     this.d = json.d;
     this.w = new Float64Array(this.n * this.d);
     this.dw = new Float64Array(this.n * this.d);
-    for(let i = 0, n = this.n * this.d; i < n; i++) {
+    for (let i = 0, n = this.n * this.d; i < n; i++) {
       this.w[i] = json.w[i]; // copy over weights
     }
     return this;
@@ -81,17 +91,17 @@ export class Mat {
     return ix;
   }
   gradFillConst(c: number): void {
-    for(let i = 0, n = this.dw.length; i < n; i++) {
+    for (let i = 0, n = this.dw.length; i < n; i++) {
       this.dw[i] = c;
     }
   }
   fillRandn(mu: number, std: number): void {
-    for(let i = 0, n = this.w.length; i < n; i++) {
+    for (let i = 0, n = this.w.length; i < n; i++) {
       this.w[i] = randn(mu, std);
     }
   }
   fillRand(lo: number, hi: number) {
-    for(let i = 0, n = this.w.length; i < n; i++) {
+    for (let i = 0, n = this.w.length; i < n; i++) {
       this.w[i] = randf(lo, hi);
     }
   }
@@ -100,7 +110,7 @@ export class Mat {
     const w = this.w;
     let maxv = w[0];
     let maxix = 0;
-    for(let i = 1, n = w.length; i < n; i++) {
+    for (let i = 1, n = w.length; i < n; i++) {
       const v = w[i];
       if (v > maxv) {
         maxix = i;
@@ -109,7 +119,7 @@ export class Mat {
     }
     return maxix;
   }
-  static fromJSON(json: IMatJson): Mat {
+  static fromJSON(json: IMatJSON): Mat {
     const mat = new Mat(1, 1);
     mat.fromJSON(json);
     return mat;

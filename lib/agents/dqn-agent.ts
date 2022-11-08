@@ -1,15 +1,8 @@
-import { randi } from "../utilities";
-import { Mat } from "../mat";
-import { Tuple } from "../tuple";
-import { Graph } from "../graph";
-import { INetJSON, Net } from "../net";
-
-export interface IDQNAgentJSON {
-  nh: number;
-  ns: number;
-  na: number;
-  net: INetJSON;
-}
+import {activation, randi} from "../utilities";
+import {Mat} from "../mat";
+import {Tuple} from "../tuple";
+import {Graph} from "../graph";
+import {NetJSON, Net} from "../net";
 
 export interface IDQNAgentOptions {
   gamma?: number;
@@ -19,9 +12,25 @@ export interface IDQNAgentOptions {
   experienceSize?: number;
   learningStepsPerIteration?: number;
   tderrorClamp?: number;
-  numHiddenUnits?: number;
-  numStates?: number;
-  maxNumActions?: number;
+  hiddenLayers?: number[];
+  inputSize?: number;
+  outputSize?: number;
+  activation?: activation;
+}
+
+export interface IDQNAgentJSON {
+  gamma: number;
+  epsilon: number;
+  alpha: number;
+  experienceAddEvery: number;
+  experienceSize: number;
+  learningStepsPerIteration: number;
+  tderrorClamp: number;
+  hiddenLayers: number[];
+  inputSize: number;
+  outputSize: number;
+  activation: activation;
+  net: NetJSON;
 }
 
 export class DQNAgent {
@@ -32,12 +41,13 @@ export class DQNAgent {
   experienceSize: number;
   learningStepsPerIteration: number;
   tderrorClamp: number;
-  numHiddenUnits: number;
-  numStates: number;
-  maxNumActions: number;
+  hiddenLayers: number[];
+  inputSize: number;
+  outputSize: number;
   net: Net;
   exp: Array<Tuple>;
   expi: number;
+  activation: activation;
 
   t: number;
 
@@ -58,14 +68,15 @@ export class DQNAgent {
     this.experienceSize = opt.experienceSize ?? 5000; // size of experience replay
     this.learningStepsPerIteration = opt.learningStepsPerIteration ?? 10;
     this.tderrorClamp = opt.tderrorClamp ?? 1.0;
-    this.numHiddenUnits = opt.numHiddenUnits ?? 100;
-    this.numStates = opt.numStates ?? 100;
-    this.maxNumActions = opt.maxNumActions ?? 100;
+    this.hiddenLayers = opt.hiddenLayers ?? [100];
+    this.inputSize = opt.inputSize ?? 100;
+    this.outputSize = opt.outputSize ?? 100;
+    this.activation = opt.activation ?? 'tanh';
 
     // nets are hardcoded for now as key (str) -> Mat
     // not proud of this. better solution is to have a whole Net object
     // on top of Mats, but for now sticking with this
-    this.net = new Net(this.numHiddenUnits, this.numStates, this.maxNumActions);
+    this.net = new Net(this.inputSize, this.hiddenLayers, this.outputSize);
 
     this.exp = []; // experience
     this.expi = 0; // where to insert
@@ -82,39 +93,47 @@ export class DQNAgent {
   }
   toJSON(): IDQNAgentJSON {
     // save function
-    const { numHiddenUnits, numStates, maxNumActions } = this;
     return {
-      nh: numHiddenUnits,
-      ns: numStates,
-      na: maxNumActions,
+      gamma: this.gamma,
+      epsilon: this.epsilon,
+      alpha: this.alpha,
+      experienceAddEvery: this.experienceAddEvery,
+      experienceSize: this.experienceSize,
+      learningStepsPerIteration: this.learningStepsPerIteration,
+      tderrorClamp: this.tderrorClamp,
+      hiddenLayers: this.hiddenLayers,
+      inputSize: this.inputSize,
+      outputSize: this.outputSize,
+      activation: this.activation,
       net: this.net.toJSON(),
     };
   }
-  fromJSON(j: IDQNAgentJSON): void {
-    // load function
-    this.numHiddenUnits = j.nh;
-    this.numStates = j.ns;
-    this.maxNumActions = j.na;
-    this.net = Net.fromJSON(j.net);
+  static fromJSON(j: IDQNAgentJSON): DQNAgent {
+    const agent = new DQNAgent(j);
+    agent.net = Net.fromJSON(j.net);
+    return agent;
   }
-  forwardQ(s: Mat, needs_backprop: boolean): Mat {
-    const { net } = this;
-    const G = new Graph(needs_backprop);
-    const a1mat = G.add(G.mul(net.W1, s), net.b1);
-    const h1mat = G.tanh(a1mat);
-    const a2mat = G.add(G.mul(net.W2, h1mat), net.b2);
+  forwardQ(s: Mat, needsBackprop: boolean): Mat {
+    const { weights, biases } = this.net;
+    const G = new Graph(needsBackprop);
+    let h1mat: Mat = new Mat(0, 0);
+    for (let i = 0, max = weights.length - 1; i < max; i++) {
+      const a1mat = G.add(G.mul(weights[i], i === 0 ? s : h1mat), biases[i]);
+      h1mat = G[this.activation](a1mat);
+    }
+    const a2mat = G.add(G.mul(weights[weights.length - 1], h1mat), biases[biases.length - 1]);
     this.lastG = G; // back this up. Kind of hacky isn't it
     return a2mat;
   }
   act(slist: number[] | Float64Array): number {
     // convert to a Mat column vector
-    const s = new Mat(this.numStates, 1);
+    const s = new Mat(this.inputSize, 1);
     s.setFrom(slist);
 
     let a: number;
     // epsilon greedy policy
     if (Math.random() < this.epsilon) {
-      a = randi(0, this.maxNumActions);
+      a = randi(0, this.outputSize);
     } else {
       // greedy wrt Q function
       const amat = this.forwardQ(s, false);
@@ -149,7 +168,7 @@ export class DQNAgent {
       this.t += 1;
 
       // sample some additional experience from replay memory and learn from it
-      for(let k = 0; k < this.learningStepsPerIteration; k++) {
+      for (let k = 0; k < this.learningStepsPerIteration; k++) {
         const ri = randi(0, this.exp.length); // todo: priority sweeps?
         this.learnFromTuple(this.exp[ri]);
       }

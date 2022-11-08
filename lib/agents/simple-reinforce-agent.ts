@@ -1,4 +1,4 @@
-import { randn } from "../utilities";
+import {activation, randn} from "../utilities";
 import { Mat } from "../mat";
 import { Graph } from "../graph";
 import { Net } from "../net";
@@ -8,8 +8,9 @@ export interface ISimpleReinforceAgentOption {
   epsilon?: number;
   alpha?: number;
   beta?: number;
-  numStates: number;
-  maxNumActions: number;
+  inputSize: number;
+  outputSize: number;
+  activation: activation;
 }
 
 // buggy implementation, doesnt work...
@@ -18,14 +19,15 @@ export abstract class SimpleReinforceAgent {
   epsilon: number;
   alpha: number;
   beta: number;
-  numStates: number;
-  maxNumActions: number;
+  inputSize: number;
+  outputSize: number;
   nh: number;
   nhb: number;
   actorNet: Net;
   actorOutputs: Mat[];
   actorGraphs: Graph[];
   actorActions: Mat[]; // sampled ones
+  activation: activation;
 
   rewardHistory: number[];
 
@@ -47,19 +49,20 @@ export abstract class SimpleReinforceAgent {
     this.epsilon = opt.epsilon ?? 0.75; // for epsilon-greedy policy
     this.alpha = opt.alpha ?? 0.001; // actor net learning rate
     this.beta = opt.beta ?? 0.01; // baseline net learning rate
-    this.numStates = opt.numStates;
-    this.maxNumActions = opt.maxNumActions;
+    this.inputSize = opt.inputSize;
+    this.outputSize = opt.outputSize;
     this.nh = 100; // number of hidden units
     this.nhb = 100; // and also in the baseline lstm
+    this.activation = opt.activation ?? "tanh";
 
-    this.actorNet = new Net(this.nh, this.numStates, this.maxNumActions);
+    this.actorNet = new Net(this.inputSize, [this.nh], this.outputSize);
     this.actorOutputs = [];
     this.actorGraphs = [];
     this.actorActions = []; // sampled ones
 
     this.rewardHistory = [];
 
-    this.baselineNet = new Net(this.nhb, this.numStates, this.maxNumActions);
+    this.baselineNet = new Net(this.inputSize, [this.nhb], this.outputSize);
     this.baselineOutputs = [];
     this.baselineGraphs = [];
 
@@ -73,24 +76,24 @@ export abstract class SimpleReinforceAgent {
     this.tderror = 0;
   }
 
-  forwardActor(s: Mat, needs_backprop: boolean) {
+  forwardActor(s: Mat, needsBackprop: boolean) {
     const net = this.actorNet;
-    const G = new Graph(needs_backprop);
-    const a1mat = G.add(G.mul(net.W1, s), net.b1);
-    const h1mat = G.tanh(a1mat);
-    const a2mat = G.add(G.mul(net.W2, h1mat), net.b2);
+    const G = new Graph(needsBackprop);
+    const a1mat = G.add(G.mul(net.weights[0], s), net.biases[0]);
+    const h1mat = G[this.activation](a1mat);
+    const a2mat = G.add(G.mul(net.weights[1], h1mat), net.biases[1]);
     return {
       a: a2mat,
       G,
     };
   }
 
-  forwardValue(s: Mat, needs_backprop: boolean) {
+  forwardValue(s: Mat, needsBackprop: boolean) {
     const net = this.baselineNet;
-    const G = new Graph(needs_backprop);
-    const a1mat = G.add(G.mul(net.W1, s), net.b1);
-    const h1mat = G.tanh(a1mat);
-    const a2mat = G.add(G.mul(net.W2, h1mat), net.b2);
+    const G = new Graph(needsBackprop);
+    const a1mat = G.add(G.mul(net.weights[0], s), net.biases[0]);
+    const h1mat = G[this.activation](a1mat);
+    const a2mat = G.add(G.mul(net.weights[1], h1mat), net.biases[1]);
     return {
       a: a2mat,
       G,
@@ -99,7 +102,7 @@ export abstract class SimpleReinforceAgent {
 
   act(slist: number[] | Float64Array): Mat {
     // convert to a Mat column vector
-    const s = new Mat(this.numStates, 1);
+    const s = new Mat(this.inputSize, 1);
     s.setFrom(slist);
 
     // forward the actor to get action output
@@ -143,7 +146,7 @@ export abstract class SimpleReinforceAgent {
       // lets learn and flush
       // first: compute the sample values at all points
       const vs = [];
-      for(let t = 0; t < nuse; t++) {
+      for (let t = 0; t < nuse; t++) {
         let mul = 1;
         // compute the actual discounted reward for this time step
         let V = 0;
@@ -154,7 +157,7 @@ export abstract class SimpleReinforceAgent {
         }
         // get the predicted baseline at this time step
         const b = this.baselineOutputs[t].w[0];
-        for(let i = 0; i < this.maxNumActions; i++) {
+        for (let i = 0; i < this.outputSize; i++) {
           // [the action delta] * [the desirebility]
           let update = - (V - b) * (this.actorActions[t].w[i] - this.actorOutputs[t].w[i]);
           if (update > 0.1) { update = 0.1; }

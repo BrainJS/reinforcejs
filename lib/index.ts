@@ -9,9 +9,9 @@ export { SimpleReinforceAgent, ISimpleReinforceAgentOption } from "./agents/simp
 // lib
 export { Graph } from "./graph";
 export { LSTM, ILstmModelLayer, ILstmModel, ILSTMCell } from "./lstm";
-export { Mat, IMatJson } from "./mat";
+export { Mat, IMatJSON } from "./mat";
 export { Net, INetJSON } from "./net";
 export { RandMat } from "./rand-mat";
 export { Solver } from "./solver";
 export { Tuple } from "./tuple";
-export { randn, gaussRandom, randf, randi, samplei, sampleWeighted, setConst, assert } from "./utilities"
+export { randn, gaussRandom, randf, randi, samplei, sampleWeighted, setConst, assert, activation } from "./utilities"
