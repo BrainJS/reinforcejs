@@ -1,9 +1,17 @@
-import { sampleWeighted } from "../utilities";
+import {sampleWeighted} from "../utilities";
+
+export interface IDPAgentJSON {
+  gamma: number;
+  inputSize: number;
+  outputSize: number;
+  V: number[];
+}
 
 export interface IDPAgentOptions {
   gamma?: number;
   inputSize: number;
   outputSize: number;
+  V?: number[];
 }
 // DPAgent performs Value Iteration
 // - can also be used for Policy Iteration if you really wanted to
@@ -22,13 +30,13 @@ export abstract class DPAgent {
     // reset the agent's policy and value function
     this.inputSize = opt.inputSize;
     this.outputSize = opt.outputSize;
-    this.V = new Float64Array(this.inputSize); // state value function
+    this.V = opt.V ? new Float64Array(opt.V) : new Float64Array(this.inputSize); // state value function
     this.P = new Float64Array(this.inputSize * this.outputSize); // policy distribution \pi(s,a)
     // initialize uniform random policy
     for (let s = 0; s < this.inputSize; s++) {
       const poss = this.allowedActions(s);
       for (let i = 0, n = poss.length; i < n; i++) {
-        this.P[poss[i] * this.inputSize + s] = 1.0 / poss.length;
+        this.P[poss[i] * this.inputSize + s] = 1 / poss.length;
       }
     }
   }
@@ -49,16 +57,14 @@ export abstract class DPAgent {
     const maxi = sampleWeighted(ps);
     return poss[maxi];
   }
-
   learn(): void {
     // perform a single round of value iteration
     this.evaluatePolicy(); // writes this.V
     this.updatePolicy(); // writes this.P
   }
-
   evaluatePolicy(): void {
     // perform a synchronous update of the value function
-    const Vnew = new Float64Array(this.inputSize);
+    const vNew = new Float64Array(this.inputSize);
     for (let s = 0; s < this.inputSize; s++) {
       // integrate over actions in a stochastic policy
       // note that we assume that policy probability mass over allowed actions sums to one
@@ -72,18 +78,17 @@ export abstract class DPAgent {
         const rs = this.reward(s, a, ns); // reward for s->a->ns transition
         v += prob * (rs + this.gamma * this.V[ns]);
       }
-      Vnew[s] = v;
+      vNew[s] = v;
     }
-    this.V = Vnew; // swap
+    this.V = vNew; // swap
   }
-
   updatePolicy(): void {
     // update policy to be greedy w.r.t. learned Value function
     for (let s = 0; s < this.inputSize; s++) {
       const poss = this.allowedActions(s);
       // compute value of taking each allowed action
-      let vmax: number = 0;
-      let nmax: number = 1;
+      let vMax: number = 0;
+      let nMax: number = 1;
       const vs = [];
       for (let i = 0, n = poss.length; i < n; i++) {
         const a = poss[i];
@@ -91,18 +96,26 @@ export abstract class DPAgent {
         const rs = this.reward(s,a,ns);
         const v = rs + this.gamma * this.V[ns];
         vs.push(v);
-        if (i === 0 || v > vmax) {
-          vmax = v;
-          nmax = 1;
-        } else if (v === vmax) {
-          nmax += 1;
+        if (i === 0 || v > vMax) {
+          vMax = v;
+          nMax = 1;
+        } else if (v === vMax) {
+          nMax += 1;
         }
       }
       // update policy smoothly across all argmaxy actions
       for (let i = 0, n = poss.length; i < n; i++) {
         const a = poss[i];
-        this.P[a*this.inputSize+s] = (vs[i] === vmax) ? 1.0/nmax : 0.0;
+        this.P[a * this.inputSize + s] = (vs[i] === vMax) ? 1 / nMax : 0.0;
       }
     }
+  }
+  toJSON(): IDPAgentJSON {
+    return {
+      gamma: this.gamma,
+      inputSize: this.inputSize,
+      outputSize: this.outputSize,
+      V: Array.from(this.V),
+    };
   }
 }

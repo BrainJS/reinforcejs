@@ -1,9 +1,21 @@
-import { Mat } from "../mat";
-import { RandMat } from "../rand-mat";
-import { Graph } from "../graph";
-import {activation, randn} from "../utilities";
-import { Net } from "../net";
+import {IMatJSON, Mat} from "../mat";
+import {RandMat} from "../rand-mat";
+import {Graph} from "../graph";
+import {Activation, randn} from "../utilities";
+import {INetJSON, Net} from "../net";
 
+export interface IDeterministPGJSON {
+  gamma: number;
+  epsilon: number;
+  alpha: number;
+  beta: number;
+  hiddenLayers: number[];
+  inputSize: number;
+  outputSize: number;
+  activation: Activation;
+  net: INetJSON;
+  criticw: IMatJSON;
+}
 export interface IDeterministPGOptions {
   gamma?: number;
   epsilon?: number;
@@ -12,10 +24,12 @@ export interface IDeterministPGOptions {
   inputSize: number;
   outputSize: number;
   hiddenLayers?: number[];
-  activation: activation;
+  activation?: Activation;
+  net?: INetJSON;
+  criticw?: IMatJSON;
 }
 // Currently buggy implementation, doesnt work
-export abstract class DeterministPG {
+export class DeterministPG {
   gamma: number;
   epsilon: number;
   alpha: number;
@@ -34,7 +48,7 @@ export abstract class DeterministPG {
   a1: null | Mat;
   t: number;
 
-  activation: activation;
+  activation: Activation;
 
   constructor(opt: IDeterministPGOptions) {
     this.gamma = opt.gamma ?? 0.5; // future reward discount factor
@@ -47,11 +61,11 @@ export abstract class DeterministPG {
     this.activation = opt.activation ?? "tanh";
 
     // actor
-    this.actorNet = new Net(this.inputSize, this.hiddenLayers, this.outputSize);
+    this.actorNet = opt.net ? Net.fromJSON(opt.net) : new Net(this.inputSize, this.hiddenLayers, this.outputSize);
     this.ntheta = this.outputSize * this.inputSize + this.outputSize; // number of params in actor
 
     // critic
-    this.criticw = new RandMat(1, this.ntheta, 0, 0.01); // row vector
+    this.criticw = opt.criticw ? Mat.fromJSON(opt.criticw) : new RandMat(1, this.ntheta, 0, 0.01); // row vector
 
     this.r0 = null;
     this.s0 = null;
@@ -60,7 +74,6 @@ export abstract class DeterministPG {
     this.a1 = null;
     this.t = 0;
   }
-
   forwardActor(s: null | Mat, needsBackprop: boolean) {
     const net = this.actorNet;
     const G = new Graph(needsBackprop);
@@ -69,7 +82,6 @@ export abstract class DeterministPG {
     const a2mat = G.add(G.mul(net.weights[1], h1mat), net.biases[1]);
     return { a: a2mat, G };
   }
-
   act(slist: number[] | Float64Array): Mat {
     // convert to a Mat column vector
     const s = new Mat(this.inputSize, 1);
@@ -101,20 +113,18 @@ export abstract class DeterministPG {
 
     return a;
   }
-
   utilJacobianAt(s: null | Mat): Mat {
     const ujacobian = new Mat(this.ntheta, this.outputSize);
     for (let a = 0; a < this.outputSize; a++) {
       this.actorNet.zeroGrads();
       const ag = this.forwardActor(this.s0, true);
-      ag.a.dw[a] = 1.0;
+      ag.a.dw[a] = 1;
       ag.G.backward();
       const gflat = this.actorNet.flattenGrads();
       ujacobian.setColumn(gflat,a);
     }
     return ujacobian;
   }
-
   learn(r1: number): void {
     // perform an update on Q function
     //this.rewardHistory.push(r1);
@@ -168,12 +178,25 @@ export abstract class DeterministPG {
     }
     this.r0 = r1; // store for next update
   }
-
   updateNaturalGradient(mat: Mat, ix: number = 0): number {
     for (let i = 0, n = mat.w.length; i < n; i++) {
       mat.w[i] += this.alpha * this.criticw.w[ix]; // natural gradient update
       ix += 1;
     }
     return ix;
+  }
+  toJSON(): IDeterministPGJSON {
+    return {
+      gamma: this.gamma,
+      epsilon: this.epsilon,
+      alpha: this.alpha,
+      beta: this.beta,
+      hiddenLayers: Array.from(this.hiddenLayers),
+      inputSize: this.inputSize,
+      outputSize: this.outputSize,
+      activation: this.activation,
+      net: this.actorNet.toJSON(),
+      criticw: this.criticw.toJSON(),
+    };
   }
 }

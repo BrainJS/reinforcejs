@@ -1,7 +1,7 @@
-import {activation, randn} from "../utilities";
-import { Mat } from "../mat";
-import { Graph } from "../graph";
-import { Net } from "../net";
+import {Activation, randn} from "../utilities";
+import {Mat} from "../mat";
+import {Graph} from "../graph";
+import {Net} from "../net";
 
 export interface ISimpleReinforceAgentOption {
   gamma?: number;
@@ -10,7 +10,7 @@ export interface ISimpleReinforceAgentOption {
   beta?: number;
   inputSize: number;
   outputSize: number;
-  activation: activation;
+  activation: Activation;
 }
 
 // buggy implementation, doesnt work...
@@ -27,7 +27,7 @@ export abstract class SimpleReinforceAgent {
   actorOutputs: Mat[];
   actorGraphs: Graph[];
   actorActions: Mat[]; // sampled ones
-  activation: activation;
+  activation: Activation;
 
   rewardHistory: number[];
 

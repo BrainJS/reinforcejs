@@ -1,4 +1,4 @@
-export type activation = 'relu' | 'tanh' | 'sigmoid';
+export type Activation = "relu" | "tanh" | "sigmoid";
 
 export function assert(condition: boolean, message = "Assertion failed") {
   // from http://stackoverflow.com/questions/15313418/javascript-assert

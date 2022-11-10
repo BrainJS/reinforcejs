@@ -24,7 +24,7 @@ export class Solver {
 
           // rmsprop adaptive learning rate
           let mdwi = m.dw[i];
-          s.w[i] = s.w[i] * this.decayRate + (1.0 - this.decayRate) * mdwi * mdwi;
+          s.w[i] = s.w[i] * this.decayRate + (1 - this.decayRate) * mdwi * mdwi;
 
           // gradient clip
           if (mdwi > clipval) {
@@ -43,7 +43,7 @@ export class Solver {
         }
       }
     }
-    solverStats['ratioClipped'] = numClipped * 1.0 / numTot;
+    solverStats['ratioClipped'] = numClipped * 1 / numTot;
     return solverStats;
   }
 }

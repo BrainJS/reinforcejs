@@ -23,10 +23,6 @@ export type NetJSON = INetJSON | INetJSONLegacy;
 export class Net {
   weights: Mat[] = [];
   biases: Mat[] = [];
-  // W1: Mat;
-  // b1: Mat;
-  // W2: Mat;
-  // b2: Mat;
 
   constructor(
     public inputSize: number,
@@ -42,10 +38,6 @@ export class Net {
 
     this.weights.push(new RandMat(outputSize, hiddenLayers[hiddenLayers.length - 1], 0, 0.1));
     this.biases.push(new Mat(outputSize, 1/*, 0, 0.01*/));
-    // this.W1 = new RandMat(numHiddenUnits, numStates, 0, 0.01);
-    // this.b1 = new Mat(numHiddenUnits, 1/*, 0, 0.01*/);
-    // this.W2 = new RandMat(maxNumActions, numHiddenUnits, 0, 0.1);
-    // this.b2 = new Mat(maxNumActions, 1/*, 0, 0.01*/);
   }
 
   update(alpha: number): void {
@@ -53,10 +45,6 @@ export class Net {
       this.weights[i].update(alpha);
       this.biases[i].update(alpha);
     }
-    // this.W1.update(alpha);
-    // this.b1.update(alpha);
-    // this.W2.update(alpha);
-    // this.b2.update(alpha);
   }
 
   zeroGrads(): void {
@@ -64,10 +52,6 @@ export class Net {
       this.weights[i].gradFillConst(0);
       this.biases[i].gradFillConst(0);
     }
-    // this.W1.gradFillConst(0);
-    // this.b1.gradFillConst(0);
-    // this.W2.gradFillConst(0);
-    // this.b2.gradFillConst(0);
   }
 
   flattenGrads(): Mat {
@@ -94,16 +78,9 @@ export class Net {
       weights: this.weights.map(m => m.toJSON()),
       biases: this.biases.map(m => m.toJSON()),
     }
-    // return {
-    //   W1: this.W1.toJSON(),
-    //   b1: this.b1.toJSON(),
-    //   W2: this.W2.toJSON(),
-    //   b2: this.b2.toJSON(),
-    // }
   }
 
   static fromJSON(json: NetJSON): Net {
-    debugger;
     const net = new Net(json.inputSize, json.hiddenLayers, json.outputSize);
     net.weights = [];
     net.biases = [];

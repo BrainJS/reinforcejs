@@ -1,4 +1,4 @@
-import {activation, randi} from "../utilities";
+import {Activation, randi} from "../utilities";
 import {Mat} from "../mat";
 import {Tuple} from "../tuple";
 import {Graph} from "../graph";
@@ -15,7 +15,8 @@ export interface IDQNAgentOptions {
   hiddenLayers?: number[];
   inputSize?: number;
   outputSize?: number;
-  activation?: activation;
+  activation?: Activation | string;
+  net?: NetJSON;
 }
 
 export interface IDQNAgentJSON {
@@ -29,7 +30,7 @@ export interface IDQNAgentJSON {
   hiddenLayers: number[];
   inputSize: number;
   outputSize: number;
-  activation: activation;
+  activation: string;
   net: NetJSON;
 }
 
@@ -47,7 +48,7 @@ export class DQNAgent {
   net: Net;
   exp: Array<Tuple>;
   expi: number;
-  activation: activation;
+  activation: Activation;
 
   t: number;
 
@@ -67,16 +68,16 @@ export class DQNAgent {
     this.experienceAddEvery = opt.experienceAddEvery ?? 25; // number of time steps before we add another experience to replay memory
     this.experienceSize = opt.experienceSize ?? 5000; // size of experience replay
     this.learningStepsPerIteration = opt.learningStepsPerIteration ?? 10;
-    this.tderrorClamp = opt.tderrorClamp ?? 1.0;
+    this.tderrorClamp = opt.tderrorClamp ?? 1;
     this.hiddenLayers = opt.hiddenLayers ?? [100];
     this.inputSize = opt.inputSize ?? 100;
     this.outputSize = opt.outputSize ?? 100;
-    this.activation = opt.activation ?? 'tanh';
+    this.activation = (opt.activation ?? "tanh") as Activation;
 
     // nets are hardcoded for now as key (str) -> Mat
     // not proud of this. better solution is to have a whole Net object
     // on top of Mats, but for now sticking with this
-    this.net = new Net(this.inputSize, this.hiddenLayers, this.outputSize);
+    this.net = opt.net ? Net.fromJSON(opt.net) : new Net(this.inputSize, this.hiddenLayers, this.outputSize);
 
     this.exp = []; // experience
     this.expi = 0; // where to insert
@@ -107,11 +108,6 @@ export class DQNAgent {
       activation: this.activation,
       net: this.net.toJSON(),
     };
-  }
-  static fromJSON(j: IDQNAgentJSON): DQNAgent {
-    const agent = new DQNAgent(j);
-    agent.net = Net.fromJSON(j.net);
-    return agent;
   }
   forwardQ(s: Mat, needsBackprop: boolean): Mat {
     const { weights, biases } = this.net;

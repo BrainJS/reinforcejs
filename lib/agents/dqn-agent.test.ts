@@ -34,8 +34,8 @@ describe("DQNAgent", () => {
       });
     });
   });
-  describe("fromJSON", () => {
-    it("serializes to instance", () => {
+  describe("constructor", () => {
+    it("can serialize from json", () => {
       const agent = new DQNAgent({
         gamma: 1,
         epsilon: 2,
@@ -49,7 +49,7 @@ describe("DQNAgent", () => {
         outputSize: 10,
         activation: "sigmoid",
       });
-      expect(DQNAgent.fromJSON(agent.toJSON())).toMatchObject(agent);
+      expect(new DQNAgent(agent.toJSON())).toMatchObject(agent);
     });
   });
 });

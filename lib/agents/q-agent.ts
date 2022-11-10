@@ -1,7 +1,32 @@
-import {setConst, sampleWeighted, randi, activation} from "../utilities";
+import {setConst, sampleWeighted, randi} from "../utilities";
+
+export enum QAgentUpdateType {
+  QLearn= "qlearn",
+  Sarsa = "sarsa",
+}
+export type QAgentUpdate = QAgentUpdateType.QLearn | QAgentUpdateType.Sarsa;
+
+export interface IQAgentJSON {
+  update: string;
+  gamma: number;
+  epsilon: number;
+  alpha: number;
+  smoothPolicyUpdate: boolean;
+  beta: number;
+  lambda: number;
+  replacingTraces: boolean;
+  qInitVal: number;
+  planN: number;
+  inputSize: number;
+  outputSize: number;
+  P: number[];
+  e: number[];
+  envModelR: number[];
+  pq: number[];
+}
 
 export interface IQAgentOptions {
-  update?: 'qlearn' | 'sarsa';
+  update?: QAgentUpdate | string;
   gamma?: number;
   epsilon?: number;
   alpha?: number;
@@ -13,7 +38,10 @@ export interface IQAgentOptions {
   planN?: number;
   inputSize: number;
   outputSize: number;
-  activation: activation;
+  P?: number[];
+  e?: number[];
+  envModelR?: number[];
+  pq?: number[];
 }
 // QAgent uses TD (Q-Learning, SARSA)
 // - does not require environment model :)
@@ -40,7 +68,7 @@ export abstract class QAgent {
   pq: number[] | Float64Array;
 
   constructor(opt: IQAgentOptions) {
-    this.update = opt.update ?? 'qlearn'; // qlearn | sarsa
+    this.update = opt.update ?? QAgentUpdateType.QLearn; // qlearn | sarsa
     this.gamma = opt.gamma ?? 0.75; // future reward discount factor
     this.epsilon = opt.epsilon ?? 0.1; // for epsilon-greedy policy
     this.alpha = opt.alpha ?? 0.01; // value function learning rate
@@ -65,20 +93,20 @@ export abstract class QAgent {
     if (this.qInitVal !== 0) {
       setConst(this.Q, this.qInitVal);
     }
-    this.P = new Float64Array(this.inputSize * this.outputSize); // policy distribution \pi(s,a)
-    this.e = new Float64Array(this.inputSize * this.outputSize); // eligibility trace
+    this.P = opt.P ? new Float64Array(opt.P) : new Float64Array(this.inputSize * this.outputSize); // policy distribution \pi(s,a)
+    this.e = opt.e ? new Float64Array(opt.e) : new Float64Array(this.inputSize * this.outputSize); // eligibility trace
     this.envModelS = new Float64Array(this.inputSize * this.outputSize); // environment model (s,a) -> (s',r)
     setConst(this.envModelS, -1); // init to -1 so we can test if we saw the state before
-    this.envModelR = new Float64Array(this.inputSize * this.outputSize); // environment model (s,a) -> (s',r)
+    this.envModelR = opt.envModelR ? new Float64Array(opt.envModelR) : new Float64Array(this.inputSize * this.outputSize); // environment model (s,a) -> (s',r)
 
     this.saSeen = [];
-    this.pq = new Float64Array(this.inputSize * this.outputSize);
+    this.pq = opt.pq ? new Float64Array(opt.pq) : new Float64Array(this.inputSize * this.outputSize);
 
     // initialize uniform random policy
     for (let s = 0; s < this.inputSize; s++) {
       const poss = this.allowedActions(s);
       for (let i = 0, n = poss.length; i < n; i++) {
-        this.P[poss[i] * this.inputSize + s] = 1.0 / poss.length;
+        this.P[poss[i] * this.inputSize + s] = 1 / poss.length;
       }
     }
     // agent memory, needed for streaming updates
@@ -128,7 +156,6 @@ export abstract class QAgent {
     this.a1 = a;
     return a;
   }
-
   learn(r1: number): void {
     // takes reward for previous action, which came from a call to act()
     if (this.r0 !== null) {
@@ -140,7 +167,6 @@ export abstract class QAgent {
     }
     this.r0 = r1; // store this for next update
   }
-
   updateModel(s0: number, a0: number, r0: number, s1: number): void {
     // transition (s0,a0) -> (r0,s1) was observed. Update environment model
     const sa = a0 * this.inputSize + s0;
@@ -151,7 +177,6 @@ export abstract class QAgent {
     this.envModelS[sa] = s1;
     this.envModelR[sa] = r0;
   }
-
   plan(): void {
     // order the states based on current priority queue information
     const spq = [];
@@ -177,7 +202,7 @@ export abstract class QAgent {
       const r0 = this.envModelR[s0a0];
       const s1 = this.envModelS[s0a0];
       let a1 = -1; // not used for Q learning
-      if (this.update === 'sarsa') {
+      if (this.update === QAgentUpdateType.Sarsa) {
         // generate random action?...
         const poss = this.allowedActions(s1);
         a1 = poss[randi(0,poss.length)];
@@ -185,13 +210,12 @@ export abstract class QAgent {
       this.learnFromTuple(s0, a0, r0, s1, a1, 0); // note lambda = 0 - shouldnt use eligibility trace here
     }
   }
-
   learnFromTuple(s0: number, a0: number, r0: number, s1: number, a1: number, lambda: number): void {
     const sa = a0 * this.inputSize + s0;
 
     let target: number = 0;
     // calculate the target for Q(s,a)
-    if (this.update === 'qlearn') {
+    if (this.update === QAgentUpdateType.QLearn) {
       // Q learning target is Q(s0,a0) = r0 + gamma * max_a Q[s1,a]
       const poss = this.allowedActions(s1);
       let qmax = 0;
@@ -201,7 +225,7 @@ export abstract class QAgent {
         if (i === 0 || qval > qmax) { qmax = qval; }
       }
       target = r0 + this.gamma * qmax;
-    } else if (this.update === 'sarsa') {
+    } else if (this.update === QAgentUpdateType.Sarsa) {
       // SARSA target is Q(s0,a0) = r0 + gamma * Q[s1,a1]
       let s1a1 = a1 * this.inputSize + s1;
       target = r0 + this.gamma * this.Q[s1a1];
@@ -235,7 +259,7 @@ export abstract class QAgent {
           this.updatePolicy(s);
         }
       }
-      if (this.explored && this.update === 'qlearn') {
+      if (this.explored && this.update === QAgentUpdateType.QLearn) {
         // have to wipe the trace since q learning is off-policy :(
         this.e = new Float64Array(this.inputSize * this.outputSize);
       }
@@ -249,7 +273,6 @@ export abstract class QAgent {
       this.updatePolicy(s0);
     }
   }
-
   updatePriority(s: number, a: number, u: number): void {
     // used in planning. Invoked when Q[sa] += update
     // we should find all states that lead to (s,a) and upgrade their priority
@@ -271,7 +294,6 @@ export abstract class QAgent {
       }
     }
   }
-
   updatePolicy(s: number): void {
     const poss = this.allowedActions(s);
     // set policy at s to be the action that achieves max_a Q(s,a)
@@ -293,7 +315,7 @@ export abstract class QAgent {
     let psum = 0.0;
     for (let i = 0, n = poss.length; i < n; i++) {
       const a = poss[i];
-      const target = (qs[i] === qmax) ? 1.0 / nmax : 0.0;
+      const target = (qs[i] === qmax) ? 1 / nmax : 0;
       const ix = a*this.inputSize+s;
       if (this.smoothPolicyUpdate) {
         // slightly hacky :p
@@ -310,6 +332,26 @@ export abstract class QAgent {
         const a = poss[i];
         this.P[a * this.inputSize + s] /= psum;
       }
+    }
+  }
+  toJSON(): IQAgentJSON {
+    return {
+      update: this.update,
+      gamma: this.gamma,
+      epsilon: this.epsilon,
+      alpha: this.alpha,
+      smoothPolicyUpdate: this.smoothPolicyUpdate,
+      beta: this.beta,
+      lambda: this.lambda,
+      replacingTraces: this.replacingTraces,
+      qInitVal: this.qInitVal,
+      planN: this.planN,
+      inputSize: this.inputSize,
+      outputSize: this.outputSize,
+      P: Array.from(this.P),
+      e: Array.from(this.e),
+      envModelR: Array.from(this.envModelR),
+      pq: Array.from(this.pq),
     }
   }
 }

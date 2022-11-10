@@ -47,7 +47,7 @@ export class Graph {
         for (let i = 0; i < n; i++) {
           // grad for z = tanh(x) is (1 - z^2)
           const mwi = out.w[i];
-          m.dw[i] += (1.0 - mwi * mwi) * out.dw[i];
+          m.dw[i] += (1 - mwi * mwi) * out.dw[i];
         }
       }
       this.backprop.push(backward);
@@ -67,7 +67,7 @@ export class Graph {
         for (let i=0;i<n;i++) {
           // grad for z = tanh(x) is (1 - z^2)
           const mwi = out.w[i];
-          m.dw[i] += mwi * (1.0 - mwi) * out.dw[i];
+          m.dw[i] += mwi * (1 - mwi) * out.dw[i];
         }
       }
       this.backprop.push(backward);
@@ -203,5 +203,5 @@ export class Graph {
 
 export function sig(x: number): number {
   // helper function for computing sigmoid
-  return 1.0 / (1 + Math.exp(-x));
+  return 1 / (1 + Math.exp(-x));
 }

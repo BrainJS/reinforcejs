@@ -2,7 +2,7 @@ import { RandMat } from "./rand-mat";
 import { Mat } from "./mat";
 import { Graph } from "./graph";
 
-export interface ILstmModelLayer {
+export interface ILSTMModelLayer {
   Wix: Mat;
   Wih: Mat;
   bi: Mat;
@@ -17,8 +17,8 @@ export interface ILstmModelLayer {
   bc: Mat;
 }
 
-export interface ILstmModel {
-  layers: ILstmModelLayer[];
+export interface ILSTMModel {
+  layers: ILSTMModelLayer[];
   Whd: Mat;
   bd: Mat;
 }
@@ -30,9 +30,9 @@ export interface ILSTMCell {
 }
 
 export class LSTM {
-  model: ILstmModel;
+  model: ILSTMModel;
   constructor(inputSize: number, hiddenLayers: number[], outputSize: number) {
-    const layers: ILstmModelLayer[] = [];
+    const layers: ILSTMModelLayer[] = [];
     for (let i = 0; i < hiddenLayers.length; i++) { // loop over depths
       const prevSize = i === 0 ? inputSize : hiddenLayers[i - 1];
       const hiddenSize = hiddenLayers[i];
