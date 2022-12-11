@@ -9,9 +9,9 @@ export interface INetJSON {
 }
 
 export class Net {
-  W1: Mat;
+  W1: RandMat;
   b1: Mat;
-  W2: Mat;
+  W2: RandMat;
   b2: Mat;
 
   constructor(nh: number, ns: number, na: number) {
@@ -45,7 +45,7 @@ export class Net {
     return g;
   }
 
-  toJSON() {
+  toJSON(): INetJSON {
     return {
       W1: this.W1.toJSON(),
       b1: this.b1.toJSON(),
@@ -56,9 +56,9 @@ export class Net {
 
   static fromJSON(json: INetJSON): Net {
     const net = new Net(0, 0, 0);
-    net.W1 = Mat.fromJSON(json.W1);
+    net.W1 = RandMat.fromJSON(json.W1);
     net.b1 = Mat.fromJSON(json.b1);
-    net.W2 = Mat.fromJSON(json.W2);
+    net.W2 = RandMat.fromJSON(json.W2);
     net.b2 = Mat.fromJSON(json.b2);
     return net;
   }
