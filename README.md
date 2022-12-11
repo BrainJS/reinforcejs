@@ -6,6 +6,10 @@ Thank you [Andrej karpathy](https://github.com/karpathy) (original author) for y
 
 **@brainjs/rl** is a Reinforcement Learning library that implements several common RL algorithms, all with web demos. In particular, the library currently includes:
 
+[Examples](https://github.com/BrainJS/rl-worlds)
+
+NOTE: Below is outdated.
+
 - **Dynamic Programming** methods
 - (Tabular) **Temporal Difference Learning** (SARSA/Q-Learning)
 - **Deep Q-Learning** for Q-Learning with function approximation with Neural Networks

@@ -8,8 +8,9 @@ export interface IRecurrentReinforceAgentOption {
   epsilon?: number;
   alpha?: number;
   beta?: number;
-  numStates: number;
-  maxNumActions: number;
+  inputSize: number;
+  outputSize: number;
+  hiddenLayers?: number[];
 }
 
 // buggy implementation as well, doesn't work
@@ -19,10 +20,10 @@ export abstract class RecurrentReinforceAgent {
   alpha: number;
   beta: number;
 
-  numStates: number;
-  maxNumActions: number;
-  nh: number;
-  nhb: number;
+  inputSize: number;
+  outputSize: number;
+  hiddenLayers: number[];
+  hiddenLayersBaseline: number[];
 
   actorLSTM: LSTM;
   actorG: Graph;
@@ -49,20 +50,20 @@ export abstract class RecurrentReinforceAgent {
     this.alpha = opt.alpha ?? 0.001; // actor net learning rate
     this.beta = opt.beta ?? 0.01; // baseline net learning rate
 
-    this.numStates = opt.numStates;
-    this.maxNumActions = opt.maxNumActions;
+    this.inputSize = opt.inputSize;
+    this.outputSize = opt.outputSize;
 
-    this.nh = 40; // number of hidden units
-    this.nhb = 40; // and also in the baseline lstm
+    this.hiddenLayers = opt.hiddenLayers ?? [40]; // number of hidden units
+    this.hiddenLayersBaseline = opt.hiddenLayers ?? [40]; // and also in the baseline lstm
 
-    this.actorLSTM = new LSTM(this.numStates, [this.nh], this.maxNumActions);
+    this.actorLSTM = new LSTM(this.inputSize, this.hiddenLayers, this.outputSize);
     this.actorG = new Graph();
     this.actorPrev = null;
     this.actorOutputs = [];
     this.rewardHistory = [];
     this.actorActions = [];
 
-    this.baselineLSTM = new LSTM(this.numStates, [this.nhb], 1);
+    this.baselineLSTM = new LSTM(this.inputSize, this.hiddenLayersBaseline, 1);
     this.baselineG = new Graph();
     this.baselinePrev = null;
     this.baselineOutputs = [];
@@ -77,24 +78,24 @@ export abstract class RecurrentReinforceAgent {
 
   act(slist: number[] | Float64Array): Mat {
     // convert to a Mat column vector
-    const s = new Mat(this.numStates, 1);
+    const s = new Mat(this.inputSize, 1);
     s.setFrom(slist);
 
     // forward the LSTM to get action distribution
-    const actorNext = this.actorLSTM.forward(this.actorG, [this.nh], s, this.actorPrev);
+    const actorNext = this.actorLSTM.forward(this.actorG, this.hiddenLayers, s, this.actorPrev);
     this.actorPrev = actorNext;
     const amat = actorNext.o;
     this.actorOutputs.push(amat);
 
     // forward the baseline LSTM
-    const baselineNext = this.baselineLSTM.forward(this.baselineG, [this.nhb], s, this.baselinePrev);
+    const baselineNext = this.baselineLSTM.forward(this.baselineG, this.hiddenLayersBaseline, s, this.baselinePrev);
     this.baselinePrev = baselineNext;
     this.baselineOutputs.push(baselineNext.o);
 
     // sample action from actor policy
     const gaussVar = 0.05;
     const a = amat.clone();
-    for(let i = 0, n = a.w.length; i < n; i++) {
+    for (let i = 0, n = a.w.length; i < n; i++) {
       a.w[0] += randn(0, gaussVar);
       a.w[1] += randn(0, gaussVar);
     }
@@ -119,7 +120,7 @@ export abstract class RecurrentReinforceAgent {
       // lets learn and flush
       // first: compute the sample values at all points
       const vs = [];
-      for(let t = 0; t < nuse; t++) {
+      for (let t = 0; t < nuse; t++) {
         let mul = 1;
         let V = 0;
         for (let t2 = t; t2 < n; t2++) {
@@ -129,7 +130,7 @@ export abstract class RecurrentReinforceAgent {
         }
         const b = this.baselineOutputs[t].w[0];
         // todo: take out the constants etc.
-        for (let i = 0; i < this.maxNumActions; i++) {
+        for (let i = 0; i < this.outputSize; i++) {
           // [the action delta] * [the desirebility]
           let update = - (V - b) * (this.actorActions[t].w[i] - this.actorOutputs[t].w[i]);
           if (update > 0.1) { update = 0.1; }
