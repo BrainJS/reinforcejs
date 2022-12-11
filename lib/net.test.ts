@@ -5,58 +5,65 @@ import { Mat } from "./mat";
 describe("Net", () => {
   describe("constructor", () => {
     it("sets props correctly", () => {
-      const net = new Net(6, 5, 7);
-      expect(net.W1 instanceof RandMat).toBeTruthy();
-      expect(net.b1 instanceof Mat).toBeTruthy();
-      expect(net.W2 instanceof RandMat).toBeTruthy();
-      expect(net.b2 instanceof Mat).toBeTruthy();
+      const net = new Net(1, [2], 3);
+      expect(net.weights[0] instanceof RandMat).toBeTruthy();
+      expect(net.biases[0] instanceof Mat).toBeTruthy();
+      expect(net.weights[1] instanceof RandMat).toBeTruthy();
+      expect(net.biases[1] instanceof Mat).toBeTruthy();
     });
   });
   describe("update", () => {
-    it("calls update(alpha) on W1, b1, W2, b2", () => {
-      const net = new Net(1, 2, 3);
-      const w1Update = jest.spyOn(net.W1, "update");
-      const b1Update = jest.spyOn(net.b1, "update");
-      const w2Update = jest.spyOn(net.W2, "update");
-      const b2Update = jest.spyOn(net.b2, "update");
+    it("calls update(alpha) on weights & biases", () => {
+      const net = new Net(1, [2], 3);
+      const wUpdates = net.weights.map(w => jest.spyOn(w, "update"));
+      const bUpdates = net.biases.map(b => jest.spyOn(b, "update"));
       const alpha = .55;
       net.update(alpha);
-      expect(w1Update).toHaveBeenCalledWith(alpha);
-      expect(b1Update).toHaveBeenCalledWith(alpha);
-      expect(w2Update).toHaveBeenCalledWith(alpha);
-      expect(b2Update).toHaveBeenCalledWith(alpha);
+      wUpdates.forEach(u => expect(u).toHaveBeenCalledWith(alpha));
+      bUpdates.forEach(u => expect(u).toHaveBeenCalledWith(alpha));
     });
   });
   describe("zeroGrads", () => {
-    it("calls gradFillConst(0) on W1, b1, W2, b2", () => {
-      const net = new Net(1, 2, 3);
-      const w1GradFillConst = jest.spyOn(net.W1, "gradFillConst");
-      const b1GradFillConst = jest.spyOn(net.b1, "gradFillConst");
-      const w2GradFillConst = jest.spyOn(net.W2, "gradFillConst");
-      const b2GradFillConst = jest.spyOn(net.b2, "gradFillConst");
+    it("calls gradFillConst(0) on weights & biases", () => {
+      const net = new Net(1, [2], 3);
+      const wGradFillConst = net.weights.map(w => jest.spyOn(w, "gradFillConst"));
+      const bGradFillConst = net.biases.map(b => jest.spyOn(b, "gradFillConst"));
       net.zeroGrads();
-      expect(w1GradFillConst).toHaveBeenCalledWith(0);
-      expect(b1GradFillConst).toHaveBeenCalledWith(0);
-      expect(w2GradFillConst).toHaveBeenCalledWith(0);
-      expect(b2GradFillConst).toHaveBeenCalledWith(0);
+      wGradFillConst.forEach(u => expect(u).toHaveBeenCalledWith(0));
+      bGradFillConst.forEach(u => expect(u).toHaveBeenCalledWith(0));
     });
   });
   describe("toJSON", () => {
-    it("calls toJSON() and returns json from W1, b1, W2, b2", () => {
-      const net = new Net(1, 2, 3);
+    it("calls toJSON() and returns json", () => {
+      const net = new Net(1, [2], 3);
       expect(net.toJSON()).toEqual({
-        W1: net.W1.toJSON(),
-        b1: net.b1.toJSON(),
-        W2: net.W2.toJSON(),
-        b2: net.b2.toJSON(),
+        inputSize: 1,
+        hiddenLayers: [2],
+        outputSize: 3,
+        weights: net.weights.map(w => w.toJSON()),
+        biases: net.biases.map(b => b.toJSON()),
       });
     });
   });
   describe("fromJSON", () => {
-    it("calls fromJSON() provides equivalent net", () => {
-      const net = new Net(1, 2 ,3);
-      const json = net.toJSON();
-      expect(Net.fromJSON(json)).toEqual(net);
+    describe("when using legacy json", () => {
+      it("calls fromJSON() provides equivalent net", () => {
+        const net = new Net(1, [2] ,3);
+        const json = {
+          W1: net.weights[0].toJSON(),
+          b1: net.biases[0].toJSON(),
+          W2: net.weights[1].toJSON(),
+          b2: net.biases[1].toJSON(),
+        };
+        expect(Net.fromJSON(json)).toEqual(net);
+      });
+    });
+    describe("when using standard json", () => {
+      it("calls fromJSON() provides equivalent net", () => {
+        const net = new Net(1, [2] ,3);
+        const json = net.toJSON();
+        expect(Net.fromJSON(json)).toEqual(net);
+      });
     });
   });
 });

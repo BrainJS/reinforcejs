@@ -9,9 +9,6 @@ export interface INetJSON {
   biases: IMatJSON[];
 }
 export interface INetJSONLegacy {
-  inputSize: number;
-  hiddenLayers: number[];
-  outputSize: number;
   W1: IMatJSON;
   b1: IMatJSON;
   W2: IMatJSON;
@@ -80,20 +77,31 @@ export class Net {
     }
   }
 
-  static fromJSON(json: NetJSON): Net {
-    const net = new Net(json.inputSize, json.hiddenLayers, json.outputSize);
-    net.weights = [];
-    net.biases = [];
+  static fromJSON(json: NetJSON | INetJSONLegacy): Net {
     if (
-      json.hasOwnProperty("weights") && json.hasOwnProperty("biases")) {
-      net.weights = (json as INetJSON).weights.map(json => Mat.fromJSON(json))
-      net.biases = (json as INetJSON).biases.map(json => Mat.fromJSON(json))
+      json.hasOwnProperty("weights")
+      && json.hasOwnProperty("biases")
+      && json.hasOwnProperty("inputSize")
+      && json.hasOwnProperty("hiddenLayers")
+      && json.hasOwnProperty("outputSize")
+    ) {
+      const standardJSON = json as INetJSON;
+      const net = new Net(standardJSON.inputSize, standardJSON.hiddenLayers, standardJSON.outputSize);
+      net.weights = [];
+      net.biases = [];
+      net.weights = standardJSON.weights.map(json => Mat.fromJSON(json))
+      net.biases = standardJSON.biases.map(json => Mat.fromJSON(json))
+      return net;
     } else {
-      net.weights.push(Mat.fromJSON((json as INetJSONLegacy).W1));
-      net.biases.push(Mat.fromJSON((json as INetJSONLegacy).b1));
-      net.weights.push(Mat.fromJSON((json as INetJSONLegacy).W2));
-      net.biases.push(Mat.fromJSON((json as INetJSONLegacy).b2));
+      const legacyJSON = json as INetJSONLegacy;
+      const net = new Net(legacyJSON.W1.d, [legacyJSON.W1.n], legacyJSON.W2.n);
+      net.weights = [];
+      net.biases = [];
+      net.weights.push(Mat.fromJSON(legacyJSON.W1));
+      net.biases.push(Mat.fromJSON(legacyJSON.b1));
+      net.weights.push(Mat.fromJSON(legacyJSON.W2));
+      net.biases.push(Mat.fromJSON(legacyJSON.b2));
+      return net;
     }
-    return net;
   }
 }
