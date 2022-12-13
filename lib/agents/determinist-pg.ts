@@ -121,7 +121,7 @@ export class DeterministPG {
       ag.a.dw[a] = 1;
       ag.G.backward();
       const gflat = this.actorNet.flattenGrads();
-      ujacobian.setColumn(gflat,a);
+      ujacobian.setColumn(gflat, a);
     }
     return ujacobian;
   }

@@ -8,14 +8,12 @@ export interface IMatJSON {
 }
 
 export class Mat {
-  n: number;
-  d: number;
   w: Float64Array;
   dw: Float64Array;
-  constructor(n: number, d: number) {
+  constructor(
+    public n: number,
+    public d: number) {
     // n is number of rows d is number of columns
-    this.n = n;
-    this.d = d;
     this.w = new Float64Array(n * d);
     this.dw = new Float64Array(n * d);
   }
@@ -38,8 +36,8 @@ export class Mat {
     }
   }
   setColumn(m: this, i: number): void {
-    for (let i = 0, n = m.w.length; i < n; i++) {
-      this.w[(this.d * i) + i] = m.w[i];
+    for (let q = 0, n = m.w.length; q < n; q++) {
+      this.w[(this.d * q) + i] = m.w[q];
     }
   }
   toJSON(): IMatJSON {
