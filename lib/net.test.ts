@@ -79,14 +79,14 @@ describe("Net", () => {
           W2: net.weights[1].toJSON(),
           b2: net.biases[1].toJSON(),
         };
-        expect(Net.fromJSON(json)).toEqual(net);
+        expect(Net.fromJSON(json).toJSON()).toEqual(net.toJSON());
       });
     });
     describe("when using standard json", () => {
       it("calls fromJSON() provides equivalent net", () => {
         const net = new Net(1, [2] ,3);
         const json = net.toJSON();
-        expect(Net.fromJSON(json)).toEqual(net);
+        expect(Net.fromJSON(json).toJSON()).toEqual(net.toJSON());
       });
     });
     describe("when using unknown json", () => {

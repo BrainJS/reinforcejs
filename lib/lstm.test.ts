@@ -33,7 +33,7 @@ describe("LSTM", () => {
           Wch: new Mat(2, 2),
           bc: new Mat(2, 1),
         }],
-        Whd: new Mat(3, 0),
+        Whd: new Mat(3, 2),
         bd: new Mat(3, 1),
       });
     });

@@ -40,7 +40,7 @@ describe("DeterministPG", () => {
         outputSize: 7,
         activation: "sigmoid",
       });
-      expect(new DeterministPG(agent.toJSON())).toMatchObject(agent);
+      expect(new DeterministPG(agent.toJSON()).toJSON()).toMatchObject(agent.toJSON());
     });
   });
 });

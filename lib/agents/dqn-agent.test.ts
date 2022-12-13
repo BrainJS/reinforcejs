@@ -49,7 +49,7 @@ describe("DQNAgent", () => {
         outputSize: 10,
         activation: "sigmoid",
       });
-      expect(new DQNAgent(agent.toJSON())).toMatchObject(agent);
+      expect(new DQNAgent(agent.toJSON()).toJSON()).toMatchObject(agent.toJSON());
     });
   });
 });
