@@ -1,7 +1,7 @@
-import { randn } from "../utilities";
-import { ILSTMCell, LSTM } from "../lstm";
-import { Graph } from "../graph";
-import { Mat } from "../mat";
+import {randn} from "../utilities";
+import {ILSTMCell, LSTM} from "../lstm";
+import {Graph} from "../graph";
+import {Mat} from "../mat";
 
 export interface IRecurrentReinforceAgentOption {
   gamma?: number;
@@ -35,7 +35,7 @@ export abstract class RecurrentReinforceAgent {
   baselinePrev: null | ILSTMCell;
   baselineOutputs: Mat[];
   baselineG: Graph;
-  tderror: number;
+  tdError: number;
   a0: null | Mat;
   r0: null | number;
   s0: null | Mat;
@@ -44,7 +44,7 @@ export abstract class RecurrentReinforceAgent {
   t: number;
 
   constructor(opt: IRecurrentReinforceAgentOption) {
-    this.tderror = Infinity;
+    this.tdError = Infinity;
     this.gamma = opt.gamma ?? 0.5; // future reward discount factor
     this.epsilon = opt.epsilon ?? 0.1; // for epsilon-greedy policy
     this.alpha = opt.alpha ?? 0.001; // actor net learning rate
@@ -84,13 +84,13 @@ export abstract class RecurrentReinforceAgent {
     // forward the LSTM to get action distribution
     const actorNext = this.actorLSTM.forward(this.actorG, this.hiddenLayers, s, this.actorPrev);
     this.actorPrev = actorNext;
-    const amat = actorNext.o;
+    const amat = actorNext.output;
     this.actorOutputs.push(amat);
 
     // forward the baseline LSTM
     const baselineNext = this.baselineLSTM.forward(this.baselineG, this.hiddenLayersBaseline, s, this.baselinePrev);
     this.baselinePrev = baselineNext;
-    this.baselineOutputs.push(baselineNext.o);
+    this.baselineOutputs.push(baselineNext.output);
 
     // sample action from actor policy
     const gaussVar = 0.05;
@@ -161,7 +161,7 @@ export abstract class RecurrentReinforceAgent {
       this.baselinePrev = null;
       this.baselineOutputs = [];
 
-      this.tderror = baselineMSE;
+      this.tdError = baselineMSE;
     }
     this.t += 1;
     this.r0 = r1; // store for next update

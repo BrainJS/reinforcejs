@@ -1,6 +1,6 @@
 // Transformer definitions
-import { assert } from "./utilities";
-import { Mat } from "./mat";
+import {assert} from "./utilities";
+import {Mat} from "./mat";
 
 export class Graph {
   backprop: Array<() => void>;
@@ -23,11 +23,15 @@ export class Graph {
     assert(ix >= 0 && ix < m.n);
     const d = m.d;
     const out = new Mat(d, 1);
-    for (let i = 0, n = d; i < n; i++) { out.w[i] = m.w[d * ix + i]; } // copy over the data
+    for (let i = 0, n = d; i < n; i++) {
+      out.w[i] = m.w[d * ix + i]; // copy over the data
+    }
 
     if (this.needsBackprop) {
       const backward = () => {
-        for (let i = 0, n = d; i < n; i++) { m.dw[d * ix + i] += out.dw[i]; }
+        for (let i = 0, n = d; i < n; i++) {
+          m.dw[d * ix + i] += out.dw[i];
+        }
       }
       this.backprop.push(backward);
     }
@@ -38,7 +42,6 @@ export class Graph {
     const out = new Mat(m.n, m.d);
     const n = m.w.length;
     for (let i  = 0; i < n; i++) {
-      // @ts-ignore
       out.w[i] = Math.tanh(m.w[i]);
     }
 
@@ -83,7 +86,7 @@ export class Graph {
     if (this.needsBackprop) {
       const backward = () => {
         for (let i = 0; i < n; i++) {
-          m.dw[i] += m.w[i] > 0 ? out.dw[i] : 0.0;
+          m.dw[i] += m.w[i] > 0 ? out.dw[i] : 0;
         }
       }
       this.backprop.push(backward);

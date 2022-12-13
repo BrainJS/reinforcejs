@@ -8,6 +8,7 @@
   "scripts": {
     "build": "rimraf dist; webpack --config webpack.config.js; tsc --declaration --emitDeclarationOnly --declarationMap",
     "test": "jest",
+    "coverage": "jest --coverage",
     "patch": "npm version patch",
     "prepublish": "yarn build"
   },

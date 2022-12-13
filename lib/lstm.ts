@@ -1,6 +1,6 @@
-import { RandMat } from "./rand-mat";
-import { Mat } from "./mat";
-import { Graph } from "./graph";
+import {RandMat} from "./rand-mat";
+import {Mat} from "./mat";
+import {Graph} from "./graph";
 
 export interface ILSTMModelLayer {
   Wix: Mat;
@@ -24,38 +24,44 @@ export interface ILSTMModel {
 }
 
 export interface ILSTMCell {
-  h: Mat[];
-  c: Mat[];
-  o: Mat;
+  hidden?: Mat[];
+  cell: Mat[];
+  output: Mat;
 }
 
 export class LSTM {
   model: ILSTMModel;
-  constructor(inputSize: number, hiddenLayers: number[], outputSize: number) {
+  constructor(
+    public inputSize: number,
+    public hiddenLayers: number[],
+    public outputSize: number,
+    public std: number = 0.08,
+  ) {
     const layers: ILSTMModelLayer[] = [];
+    let prevSize = inputSize;
     for (let i = 0; i < hiddenLayers.length; i++) { // loop over depths
-      const prevSize = i === 0 ? inputSize : hiddenLayers[i - 1];
       const hiddenSize = hiddenLayers[i];
       layers.push({
         // gates parameters
-        Wix: new RandMat(hiddenSize, prevSize , 0, 0.08),
-        Wih: new RandMat(hiddenSize, hiddenSize , 0, 0.08),
+        Wix: new RandMat(hiddenSize, prevSize , 0, std),
+        Wih: new RandMat(hiddenSize, hiddenSize , 0, std),
         bi: new Mat(hiddenSize, 1),
-        Wfx: new RandMat(hiddenSize, prevSize , 0, 0.08),
-        Wfh: new RandMat(hiddenSize, hiddenSize , 0, 0.08),
+        Wfx: new RandMat(hiddenSize, prevSize , 0, std),
+        Wfh: new RandMat(hiddenSize, hiddenSize , 0, std),
         bf: new Mat(hiddenSize, 1),
-        Wox: new RandMat(hiddenSize, prevSize , 0, 0.08),
-        Woh: new RandMat(hiddenSize, hiddenSize , 0, 0.08),
+        Wox: new RandMat(hiddenSize, prevSize , 0, std),
+        Woh: new RandMat(hiddenSize, hiddenSize , 0, std),
         bo: new Mat(hiddenSize, 1),
         // cell write params
-        Wcx: new RandMat(hiddenSize, prevSize , 0, 0.08),
-        Wch: new RandMat(hiddenSize, hiddenSize , 0, 0.08),
+        Wcx: new RandMat(hiddenSize, prevSize , 0, std),
+        Wch: new RandMat(hiddenSize, hiddenSize , 0, std),
         bc: new Mat(hiddenSize, 1),
       });
+      prevSize = hiddenLayers[i];
     }
     this.model = {
       layers,
-      Whd: new RandMat(outputSize, layers.length - 1, 0, 0.08),
+      Whd: new RandMat(outputSize, prevSize, 0, std),
       bd: new Mat(outputSize, 1),
     };
   }
@@ -71,45 +77,45 @@ export class LSTM {
 
     let hiddenPrevs: Mat[];
     let cellPrevs: Mat[];
-    if (prev === null || typeof prev.h === 'undefined') {
+    if (prev === null || typeof prev.hidden === 'undefined') {
       hiddenPrevs = [];
       cellPrevs = [];
-      for (let d=0;d<hiddenLayers.length;d++) {
+      for (let d = 0; d < hiddenLayers.length; d++) {
         hiddenPrevs.push(new Mat(hiddenLayers[d],1));
         cellPrevs.push(new Mat(hiddenLayers[d],1));
       }
     } else {
-      hiddenPrevs = prev.h;
-      cellPrevs = prev.c;
+      hiddenPrevs = prev.hidden;
+      cellPrevs = prev.cell;
     }
 
     const hidden = [];
     const cell = [];
     for (let d = 0 ; d < hiddenLayers.length; d++) {
       const layer = model.layers[d];
-      const inputVector = d === 0 ? x : hidden[d-1];
+      const inputVector = d === 0 ? x : hidden[d - 1];
       const hiddenPrev = hiddenPrevs[d];
       const cellPrev = cellPrevs[d];
 
       // input gate
       const h0 = G.mul(layer.Wix, inputVector);
       const h1 = G.mul(layer.Wih, hiddenPrev);
-      const inputGate = G.sigmoid(G.add(G.add(h0,h1),layer.bi));
+      const inputGate = G.sigmoid(G.add(G.add(h0, h1), layer.bi));
 
       // forget gate
       const h2 = G.mul(layer.Wfx, inputVector);
       const h3 = G.mul(layer.Wfh, hiddenPrev);
-      const forgetGate = G.sigmoid(G.add(G.add(h2, h3),layer.bf));
+      const forgetGate = G.sigmoid(G.add(G.add(h2, h3), layer.bf));
 
       // output gate
       const h4 = G.mul(layer.Wox, inputVector);
       const h5 = G.mul(layer.Woh, hiddenPrev);
-      const outputGate = G.sigmoid(G.add(G.add(h4, h5),layer.bo));
+      const outputGate = G.sigmoid(G.add(G.add(h4, h5), layer.bo));
 
       // write operation on cells
       const h6 = G.mul(layer.Wcx, inputVector);
       const h7 = G.mul(layer.Wch, hiddenPrev);
-      const cellWrite = G.tanh(G.add(G.add(h6, h7),layer.bc));
+      const cellWrite = G.tanh(G.add(G.add(h6, h7), layer.bc));
 
       // compute new cell activation
       const retainCell = G.eltmul(forgetGate, cellPrev); // what do we keep from cell
@@ -124,13 +130,13 @@ export class LSTM {
     }
 
     // one decoder to outputs at end
-    const output = G.add(G.mul(this.model.Whd, hidden[hidden.length - 1]),this.model.bd);
+    const output = G.add(G.mul(this.model.Whd, hidden[hidden.length - 1]), this.model.bd);
 
     // return cell memory, hidden representation and output
     return {
-      h: hidden,
-      c: cell,
-      o: output,
+      hidden,
+      cell,
+      output,
     };
   }
 

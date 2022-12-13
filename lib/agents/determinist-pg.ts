@@ -40,7 +40,7 @@ export class DeterministPG {
   actorNet: Net;
   ntheta: number;
   criticw: Mat;
-  tderror: number = Infinity;
+  tdError: number = Infinity;
   r0: null | number = null;
   s0: null | Mat;
   s1: null | Mat;
@@ -143,10 +143,10 @@ export class DeterministPG {
       const psiAa1 = Gtmp.mul(ujacobian1, ag.a);
       const qw1 = Gtmp.mul(this.criticw, psiAa1); // 1x1
       // get the td error finally
-      let tderror = this.r0 + this.gamma * qw1.w[0] - qw0.w[0]; // lol
-      if (tderror > 0.5) tderror = 0.5; // clamp
-      if (tderror < -0.5) tderror = -0.5;
-      this.tderror = tderror;
+      let tdError = this.r0 + this.gamma * qw1.w[0] - qw0.w[0]; // lol
+      if (tdError > 0.5) tdError = 0.5; // clamp
+      if (tdError < -0.5) tdError = -0.5;
+      this.tdError = tdError;
 
       // This was converted to use method updateNaturalGradient below
       // update actor policy with natural gradient
@@ -172,7 +172,7 @@ export class DeterministPG {
 
       // update the critic parameters too
       for (let i = 0; i < this.ntheta; i++) {
-        const update = this.beta * tderror * psiAa0.w[i];
+        const update = this.beta * tdError * psiAa0.w[i];
         this.criticw.w[i] += update;
       }
     }

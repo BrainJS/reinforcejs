@@ -1,15 +1,32 @@
-import { Net } from "./net";
-import { RandMat } from "./rand-mat";
-import { Mat } from "./mat";
+import {Net} from "./net";
+import {RandMat} from "./rand-mat";
+import {Mat} from "./mat";
 
 describe("Net", () => {
   describe("constructor", () => {
-    it("sets props correctly", () => {
-      const net = new Net(1, [2], 3);
-      expect(net.weights[0] instanceof RandMat).toBeTruthy();
-      expect(net.biases[0] instanceof Mat).toBeTruthy();
-      expect(net.weights[1] instanceof RandMat).toBeTruthy();
-      expect(net.biases[1] instanceof Mat).toBeTruthy();
+    describe("when used without hiddenLayers", () => {
+      it("sets props correctly", () => {
+        const net = new Net(1, [], 3);
+        expect(net.inputSize).toEqual(1);
+        expect(net.hiddenLayers).toEqual([]);
+        expect(net.outputSize).toEqual(3);
+        expect(net.weights[0] instanceof RandMat).toBeTruthy();
+        expect(net.biases[0] instanceof Mat).toBeTruthy();
+      });
+    });
+    describe("when used with hiddenLayers", () => {
+      it("sets props correctly", () => {
+        const net = new Net(1, [2], 3);
+        expect(net.inputSize).toEqual(1);
+        expect(net.hiddenLayers).toEqual([2]);
+        expect(net.outputSize).toEqual(3);
+        expect(net.weights.length).toEqual(2);
+        expect(net.biases.length).toEqual(2);
+        expect(net.weights[0] instanceof RandMat).toBeTruthy();
+        expect(net.weights[1] instanceof RandMat).toBeTruthy();
+        expect(net.biases[0] instanceof Mat).toBeTruthy();
+        expect(net.biases[1] instanceof Mat).toBeTruthy();
+      });
     });
   });
   describe("update", () => {
@@ -33,6 +50,12 @@ describe("Net", () => {
       bGradFillConst.forEach(u => expect(u).toHaveBeenCalledWith(0));
     });
   });
+  describe("flattenGrads", () => {
+    it("returns a flattened Mat", () => {
+      const net = new Net(1, [2], 3);
+      expect(net.flattenGrads()).toEqual(new Mat(13, 1));
+    });
+  });
   describe("toJSON", () => {
     it("calls toJSON() and returns json", () => {
       const net = new Net(1, [2], 3);
@@ -42,6 +65,7 @@ describe("Net", () => {
         outputSize: 3,
         weights: net.weights.map(w => w.toJSON()),
         biases: net.biases.map(b => b.toJSON()),
+        std: net.std,
       });
     });
   });
@@ -63,6 +87,12 @@ describe("Net", () => {
         const net = new Net(1, [2] ,3);
         const json = net.toJSON();
         expect(Net.fromJSON(json)).toEqual(net);
+      });
+    });
+    describe("when using unknown json", () => {
+      it("throws", () => {
+        // @ts-ignore
+        expect(() => Net.fromJSON({})).toThrow();
       });
     });
   });

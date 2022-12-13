@@ -1,4 +1,4 @@
-import { Mat } from "./mat";
+import {Mat} from "./mat";
 
 export class Solver {
   decayRate: number;

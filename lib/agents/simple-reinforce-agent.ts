@@ -42,7 +42,7 @@ export abstract class SimpleReinforceAgent {
   s1: null | Mat;
   a1: null | Mat;
 
-  tderror: number;
+  tdError: number;
 
   constructor(opt: ISimpleReinforceAgentOption) {
     this.gamma = opt.gamma ?? 0.5; // future reward discount factor
@@ -73,7 +73,7 @@ export abstract class SimpleReinforceAgent {
     this.s1 = null;
     this.a1 = null;
 
-    this.tderror = 0;
+    this.tdError = 0;
   }
 
   forwardActor(s: Mat, needsBackprop: boolean) {
@@ -188,7 +188,7 @@ export abstract class SimpleReinforceAgent {
       this.actorGraphs = [];
       this.baselineGraphs = [];
 
-      this.tderror = baselineMSE;
+      this.tdError = baselineMSE;
     }
     this.t += 1;
     this.r0 = r1; // store for next update

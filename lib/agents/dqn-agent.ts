@@ -11,7 +11,7 @@ export interface IDQNAgentOptions {
   experienceAddEvery?: number;
   experienceSize?: number;
   learningStepsPerIteration?: number;
-  tderrorClamp?: number;
+  tdErrorClamp?: number;
   hiddenLayers?: number[];
   inputSize?: number;
   outputSize?: number;
@@ -26,7 +26,7 @@ export interface IDQNAgentJSON {
   experienceAddEvery: number;
   experienceSize: number;
   learningStepsPerIteration: number;
-  tderrorClamp: number;
+  tdErrorClamp: number;
   hiddenLayers: number[];
   inputSize: number;
   outputSize: number;
@@ -41,7 +41,7 @@ export class DQNAgent {
   experienceAddEvery: number;
   experienceSize: number;
   learningStepsPerIteration: number;
-  tderrorClamp: number;
+  tdErrorClamp: number;
   hiddenLayers: number[];
   inputSize: number;
   outputSize: number;
@@ -58,7 +58,7 @@ export class DQNAgent {
   a0: null | number = null;
   a1: null | number = null;
 
-  tderror: number = Infinity;
+  tdError: number = Infinity;
   lastG?: Graph;
 
   constructor(opt: IDQNAgentOptions = {}) {
@@ -68,7 +68,7 @@ export class DQNAgent {
     this.experienceAddEvery = opt.experienceAddEvery ?? 25; // number of time steps before we add another experience to replay memory
     this.experienceSize = opt.experienceSize ?? 5000; // size of experience replay
     this.learningStepsPerIteration = opt.learningStepsPerIteration ?? 10;
-    this.tderrorClamp = opt.tderrorClamp ?? 1;
+    this.tdErrorClamp = opt.tdErrorClamp ?? 1;
     this.hiddenLayers = opt.hiddenLayers ?? [100];
     this.inputSize = opt.inputSize ?? 100;
     this.outputSize = opt.outputSize ?? 100;
@@ -90,7 +90,7 @@ export class DQNAgent {
     this.a0 = null;
     this.a1 = null;
 
-    this.tderror = 0; // for visualization only...
+    this.tdError = 0; // for visualization only...
   }
   toJSON(): IDQNAgentJSON {
     // save function
@@ -101,7 +101,7 @@ export class DQNAgent {
       experienceAddEvery: this.experienceAddEvery,
       experienceSize: this.experienceSize,
       learningStepsPerIteration: this.learningStepsPerIteration,
-      tderrorClamp: this.tderrorClamp,
+      tdErrorClamp: this.tdErrorClamp,
       hiddenLayers: this.hiddenLayers,
       inputSize: this.inputSize,
       outputSize: this.outputSize,
@@ -150,7 +150,7 @@ export class DQNAgent {
 
       // learn from this tuple to get a sense of how "surprising" it is to the agent
       const t = new Tuple(this.s0 as Mat, this.a0 as number, this.r0 as number, this.s1 as Mat, this.a1 as number);
-      this.tderror = this.learnFromTuple(t); // a measure of surprise
+      this.tdError = this.learnFromTuple(t); // a measure of surprise
 
       // decide if we should keep this experience in the replay
       if (this.t % this.experienceAddEvery === 0) {
@@ -183,17 +183,17 @@ export class DQNAgent {
     // now predict
     const pred = this.forwardQ(s0, true);
 
-    let tderror = pred.w[a0] - qmax;
-    const clamp = this.tderrorClamp;
-    if (Math.abs(tderror) > clamp) {  // huber loss to robustify
-      if (tderror > clamp) tderror = clamp;
-      if (tderror < -clamp) tderror = -clamp;
+    let tdError = pred.w[a0] - qmax;
+    const clamp = this.tdErrorClamp;
+    if (Math.abs(tdError) > clamp) {  // huber loss to robustify
+      if (tdError > clamp) tdError = clamp;
+      if (tdError < -clamp) tdError = -clamp;
     }
-    pred.dw[a0] = tderror;
+    pred.dw[a0] = tdError;
     (this.lastG as Graph).backward(); // compute gradients on net params
 
     // update net
     this.net.update(this.alpha);
-    return tderror;
+    return tdError;
   }
 }

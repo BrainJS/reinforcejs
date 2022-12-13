@@ -13,16 +13,6 @@ export class Mat {
   w: Float64Array;
   dw: Float64Array;
   constructor(n: number, d: number) {
-    if (typeof n === "undefined") {
-      debugger;
-      console.error("n is undefined");
-      throw new Error("n is undefined");
-    }
-    if (typeof d === "undefined") {
-      debugger;
-      console.error("d is undefined");
-      throw new Error("d is undefined");
-    }
     // n is number of rows d is number of columns
     this.n = n;
     this.d = d;
