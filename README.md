@@ -1,10 +1,10 @@
 # @brain/rl
 
+**@brain/rl** is a Reinforcement Learning library that implements several common RL algorithms, all with web demos. In particular, the library currently includes:
+
 **NOTE: A typescript fork of the reinforce.js library from https://github.com/karpathy/reinforcejs.
 An effort to keep the library current and usable in the modern world.
 Thank you [Andrej karpathy](https://github.com/karpathy) (original author) for your fine work.**
-
-**@brain/rl** is a Reinforcement Learning library that implements several common RL algorithms, all with web demos. In particular, the library currently includes:
 
 [Examples](https://github.com/BrainJS/rl-worlds)
 
