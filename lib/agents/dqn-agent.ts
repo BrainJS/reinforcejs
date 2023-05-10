@@ -121,30 +121,30 @@ export class DQNAgent {
     this.lastG = G; // back this up. Kind of hacky isn't it
     return a2mat;
   }
-  act(slist: number[] | Float64Array): number {
+  act(inputs: number[] | Float64Array): number {
     // convert to a Mat column vector
     const s = new Mat(this.inputSize, 1);
-    s.setFrom(slist);
+    s.setFrom(inputs);
 
-    let a: number;
+    let action: number;
     // epsilon greedy policy
     if (Math.random() < this.epsilon) {
-      a = randi(0, this.outputSize);
+      action = randi(0, this.outputSize);
     } else {
       // greedy wrt Q function
       const amat = this.forwardQ(s, false);
-      a = amat.maxi(); // returns index of argmax action
+      action = amat.maxi(); // returns index of argmax action
     }
 
     // shift state memory
     this.s0 = this.s1;
     this.a0 = this.a1;
     this.s1 = s;
-    this.a1 = a;
+    this.a1 = action;
 
-    return a;
+    return action;
   }
-  learn(r1: number): void {
+  learn(reward: number): void {
     // perform an update on Q function
     if (this.r0 !== null && this.alpha > 0) {
 
@@ -169,7 +169,7 @@ export class DQNAgent {
         this.learnFromTuple(this.exp[ri]);
       }
     }
-    this.r0 = r1; // store for next update
+    this.r0 = reward; // store for next update
   }
   learnFromTuple(t: Tuple): number {
     const { s0, a0, r0, s1, a1 } = t;

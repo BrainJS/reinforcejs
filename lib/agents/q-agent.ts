@@ -132,31 +132,31 @@ export abstract class QAgent {
 
   explored: boolean = false;
 
-  act(s: number): number {
+  act(inputs: number): number {
     // act according to epsilon greedy policy
-    const poss = this.allowedActions(s);
+    const poss = this.allowedActions(inputs);
     const probs = [];
     for (let i = 0, n = poss.length; i < n; i++) {
-      probs.push(this.P[poss[i] * this.inputSize + s]);
+      probs.push(this.P[poss[i] * this.inputSize + inputs]);
     }
 
-    let a: number;
+    let action: number;
     // epsilon greedy policy
     if (Math.random() < this.epsilon) {
-      a = poss[randi(0,poss.length)]; // random available action
+      action = poss[randi(0,poss.length)]; // random available action
       this.explored = true;
     } else {
-      a = poss[sampleWeighted(probs)];
+      action = poss[sampleWeighted(probs)];
       this.explored = false;
     }
     // shift state memory
     this.s0 = this.s1;
     this.a0 = this.a1;
-    this.s1 = s;
-    this.a1 = a;
-    return a;
+    this.s1 = inputs;
+    this.a1 = action;
+    return action;
   }
-  learn(r1: number): void {
+  learn(reward: number): void {
     // takes reward for previous action, which came from a call to act()
     if (this.r0 !== null) {
       this.learnFromTuple(this.s0 as number, this.a0 as number, this.r0 as number, this.s1 as number, this.a1 as number, this.lambda);
@@ -165,7 +165,7 @@ export abstract class QAgent {
         this.plan();
       }
     }
-    this.r0 = r1; // store this for next update
+    this.r0 = reward; // store this for next update
   }
   updateModel(s0: number, a0: number, r0: number, s1: number): void {
     // transition (s0,a0) -> (r0,s1) was observed. Update environment model

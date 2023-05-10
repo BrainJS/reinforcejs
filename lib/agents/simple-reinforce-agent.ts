@@ -10,19 +10,20 @@ export interface ISimpleReinforceAgentOption {
   beta?: number;
   inputSize: number;
   outputSize: number;
-  activation: Activation;
+  hiddenLayers?: number[];
+  activation?: Activation | string;
 }
 
 // buggy implementation, doesnt work...
-export abstract class SimpleReinforceAgent {
+export class SimpleReinforceAgent {
   gamma: number;
   epsilon: number;
   alpha: number;
   beta: number;
   inputSize: number;
   outputSize: number;
-  nh: number;
-  nhb: number;
+  hiddenLayers: number[];
+  hiddenLayersBaseline: number[];
   actorNet: Net;
   actorOutputs: Mat[];
   actorGraphs: Graph[];
@@ -51,18 +52,18 @@ export abstract class SimpleReinforceAgent {
     this.beta = opt.beta ?? 0.01; // baseline net learning rate
     this.inputSize = opt.inputSize;
     this.outputSize = opt.outputSize;
-    this.nh = 100; // number of hidden units
-    this.nhb = 100; // and also in the baseline lstm
-    this.activation = opt.activation ?? "tanh";
+    this.hiddenLayers = opt.hiddenLayers ?? [100]; // number of hidden units
+    this.hiddenLayersBaseline = opt.hiddenLayers ?? [100]; // and also in the baseline lstm
+    this.activation = (opt.activation ?? "tanh") as Activation;
 
-    this.actorNet = new Net(this.inputSize, [this.nh], this.outputSize);
+    this.actorNet = new Net(this.inputSize, this.hiddenLayers, this.outputSize);
     this.actorOutputs = [];
     this.actorGraphs = [];
     this.actorActions = []; // sampled ones
 
     this.rewardHistory = [];
 
-    this.baselineNet = new Net(this.inputSize, [this.nhb], this.outputSize);
+    this.baselineNet = new Net(this.inputSize, this.hiddenLayersBaseline, this.outputSize);
     this.baselineOutputs = [];
     this.baselineGraphs = [];
 
@@ -100,10 +101,10 @@ export abstract class SimpleReinforceAgent {
     };
   }
 
-  act(slist: number[] | Float64Array): Mat {
+  act(inputs: number[] | Float64Array): Mat {
     // convert to a Mat column vector
     const s = new Mat(this.inputSize, 1);
-    s.setFrom(slist);
+    s.setFrom(inputs);
 
     // forward the actor to get action output
     const ans1 = this.forwardActor(s, true);
@@ -120,26 +121,26 @@ export abstract class SimpleReinforceAgent {
     this.baselineGraphs.push(vg);
 
     // sample action from the stochastic gaussian policy
-    const a = amat.clone();
+    const action = amat.clone();
     const gaussVar = 0.02;
-    a.w[0] = randn(0, gaussVar);
-    a.w[1] = randn(0, gaussVar);
-    this.actorActions.push(a);
+    action.w[0] = randn(0, gaussVar);
+    action.w[1] = randn(0, gaussVar);
+    this.actorActions.push(action);
 
     // shift state memory
     this.s0 = this.s1;
     this.a0 = this.a1;
     this.s1 = s;
-    this.a1 = a;
+    this.a1 = action;
 
-    return a;
+    return action;
   }
 
   learn(r1: number) {
     // perform an update on Q function
     this.rewardHistory.push(r1);
     const n = this.rewardHistory.length;
-    let baselineMSE = 0.0;
+    let baselineMSE = 0;
     let nup = 100; // what chunk of experience to take
     let nuse = 80; // what chunk to update from
     if (n >= nup) {
@@ -158,7 +159,7 @@ export abstract class SimpleReinforceAgent {
         // get the predicted baseline at this time step
         const b = this.baselineOutputs[t].w[0];
         for (let i = 0; i < this.outputSize; i++) {
-          // [the action delta] * [the desirebility]
+          // [the action delta] * [the desirability]
           let update = - (V - b) * (this.actorActions[t].w[i] - this.actorOutputs[t].w[i]);
           if (update > 0.1) { update = 0.1; }
           if (update < -0.1) { update = -0.1; }

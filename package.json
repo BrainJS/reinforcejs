@@ -1,5 +1,5 @@
 {
-  "name": "@brainjs/rl",
+  "name": "@brain/rl",
   "browser": "dist/rl-browser.js",
   "types": "dist/lib/",
   "files": [

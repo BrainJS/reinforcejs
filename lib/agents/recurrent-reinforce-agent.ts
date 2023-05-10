@@ -76,10 +76,10 @@ export abstract class RecurrentReinforceAgent {
     this.a1 = null;
   }
 
-  act(slist: number[] | Float64Array): Mat {
+  act(inputs: number[] | Float64Array): Mat {
     // convert to a Mat column vector
     const s = new Mat(this.inputSize, 1);
-    s.setFrom(slist);
+    s.setFrom(inputs);
 
     // forward the LSTM to get action distribution
     const actorNext = this.actorLSTM.forward(this.actorG, this.hiddenLayers, s, this.actorPrev);
@@ -94,24 +94,24 @@ export abstract class RecurrentReinforceAgent {
 
     // sample action from actor policy
     const gaussVar = 0.05;
-    const a = amat.clone();
-    for (let i = 0, n = a.w.length; i < n; i++) {
-      a.w[0] += randn(0, gaussVar);
-      a.w[1] += randn(0, gaussVar);
+    const action = amat.clone();
+    for (let i = 0, n = action.w.length; i < n; i++) {
+      action.w[0] += randn(0, gaussVar);
+      action.w[1] += randn(0, gaussVar);
     }
-    this.actorActions.push(a);
+    this.actorActions.push(action);
 
     // shift state memory
     this.s0 = this.s1;
     this.a0 = this.a1;
     this.s1 = s;
-    this.a1 = a;
-    return a;
+    this.a1 = action;
+    return action;
   }
 
-  learn (r1: number): void {
+  learn (reward: number): void {
     // perform an update on Q function
-    this.rewardHistory.push(r1);
+    this.rewardHistory.push(reward);
     const n = this.rewardHistory.length;
     let baselineMSE = 0.0;
     let nup = 100; // what chunk of experience to take
@@ -164,6 +164,6 @@ export abstract class RecurrentReinforceAgent {
       this.tdError = baselineMSE;
     }
     this.t += 1;
-    this.r0 = r1; // store for next update
+    this.r0 = reward; // store for next update
   }
 }

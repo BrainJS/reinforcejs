@@ -82,10 +82,10 @@ export class DeterministPG {
     const a2mat = G.add(G.mul(net.weights[1], h1mat), net.biases[1]);
     return { a: a2mat, G };
   }
-  act(slist: number[] | Float64Array): Mat {
+  act(inputs: number[] | Float64Array): Mat {
     // convert to a Mat column vector
     const s = new Mat(this.inputSize, 1);
-    s.setFrom(slist);
+    s.setFrom(inputs);
 
     // forward the actor to get action output
     const ans = this.forwardActor(s, false);
@@ -93,25 +93,25 @@ export class DeterministPG {
     // const ag = ans.G; TODO: This doesn't seem used
 
     // sample action from the stochastic gaussian policy
-    const a = amat.clone();
+    const action = amat.clone();
     if (Math.random() < this.epsilon) {
       const gaussVar = 0.02;
-      a.w[0] = randn(0, gaussVar);
-      a.w[1] = randn(0, gaussVar);
+      action.w[0] = randn(0, gaussVar);
+      action.w[1] = randn(0, gaussVar);
     }
     let clamp = 0.25;
-    if (a.w[0] > clamp) a.w[0] = clamp;
-    if (a.w[0] < -clamp) a.w[0] = -clamp;
-    if (a.w[1] > clamp) a.w[1] = clamp;
-    if (a.w[1] < -clamp) a.w[1] = -clamp;
+    if (action.w[0] > clamp) action.w[0] = clamp;
+    if (action.w[0] < -clamp) action.w[0] = -clamp;
+    if (action.w[1] > clamp) action.w[1] = clamp;
+    if (action.w[1] < -clamp) action.w[1] = -clamp;
 
     // shift state memory
     this.s0 = this.s1;
     this.a0 = this.a1;
     this.s1 = s;
-    this.a1 = a;
+    this.a1 = action;
 
-    return a;
+    return action;
   }
   utilJacobianAt(s: null | Mat): Mat {
     const ujacobian = new Mat(this.ntheta, this.outputSize);
@@ -125,7 +125,7 @@ export class DeterministPG {
     }
     return ujacobian;
   }
-  learn(r1: number): void {
+  learn(reward: number): void {
     // perform an update on Q function
     //this.rewardHistory.push(r1);
     if (this.r0 !== null) {
@@ -176,7 +176,7 @@ export class DeterministPG {
         this.criticw.w[i] += update;
       }
     }
-    this.r0 = r1; // store for next update
+    this.r0 = reward; // store for next update
   }
   updateNaturalGradient(mat: Mat, ix: number = 0): number {
     for (let i = 0, n = mat.w.length; i < n; i++) {

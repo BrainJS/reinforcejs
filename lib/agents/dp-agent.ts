@@ -45,17 +45,17 @@ export abstract class DPAgent {
   abstract nextStateDistribution(s: number, a: number): number;
   abstract reward(s: number, a: number, ns: number): number;
 
-  act(s: number): number {
+  act(inputs: number): number {
     // behave according to the learned policy
-    const poss = this.allowedActions(s);
+    const actions = this.allowedActions(inputs);
     const ps = [];
-    for (let i = 0, n = poss.length; i < n; i++) {
-      const a = poss[i];
-      const prob = this.P[a * this.inputSize + s];
+    for (let i = 0, n = actions.length; i < n; i++) {
+      const a = actions[i];
+      const prob = this.P[a * this.inputSize + inputs];
       ps.push(prob);
     }
     const maxi = sampleWeighted(ps);
-    return poss[maxi];
+    return actions[maxi];
   }
   learn(): void {
     // perform a single round of value iteration
